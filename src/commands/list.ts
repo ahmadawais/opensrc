@@ -39,7 +39,10 @@ export async function listCommand(options: ListOptions = {}): Promise<void> {
     return;
   }
 
-  const packagesByRegistry: Record<Registry, Array<{ name: string; version: string; registry: Registry; path: string; fetchedAt: string }>> = {
+  const packagesByRegistry: Record<
+    Registry,
+    Array<{ name: string; version: string; registry: Registry; path: string; fetchedAt: string }>
+  > = {
     npm: [],
     pypi: [],
     crates: [],
@@ -62,7 +65,7 @@ export async function listCommand(options: ListOptions = {}): Promise<void> {
     hasDisplayedPackages = true;
 
     for (const source of packages) {
-      console.log(`  ${pc.white(source.name + "@" + source.version)}`);
+      console.log(`  ${pc.white(`${source.name}@${source.version}`)}`);
       console.log(pc.gray(`    Path: opnsrc/${source.path}`));
       console.log(pc.gray(`    Fetched: ${formatDate(source.fetchedAt)}`));
       console.log("");
@@ -74,7 +77,7 @@ export async function listCommand(options: ListOptions = {}): Promise<void> {
     console.log(pc.white("Repositories:\n"));
 
     for (const source of sources.repos) {
-      console.log(`  ${pc.white(source.name + "@" + source.version)}`);
+      console.log(`  ${pc.white(`${source.name}@${source.version}`)}`);
       console.log(pc.gray(`    Path: opnsrc/${source.path}`));
       console.log(pc.gray(`    Fetched: ${formatDate(source.fetchedAt)}`));
       console.log("");

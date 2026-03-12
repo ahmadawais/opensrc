@@ -1,8 +1,8 @@
-import { simpleGit, type SimpleGit } from "simple-git";
-import { rm, mkdir, readFile } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
-import type { ResolvedPackage, ResolvedRepo, FetchResult, Registry } from "../types.js";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { type SimpleGit, simpleGit } from "simple-git";
+import type { FetchResult, Registry, ResolvedPackage, ResolvedRepo } from "../types.js";
 
 const OPNSRC_DIR = "opnsrc";
 const REPOS_DIR = "repos";
@@ -40,7 +40,7 @@ export function parseRepoUrl(
   url: string,
 ): { readonly host: string; readonly owner: string; readonly repo: string } | null {
   const httpsMatch = url.match(/https?:\/\/([^/]+)\/([^/]+)\/([^/]+)/);
-  if (httpsMatch && httpsMatch[1] && httpsMatch[2] && httpsMatch[3]) {
+  if (httpsMatch?.[1] && httpsMatch[2] && httpsMatch[3]) {
     return {
       host: httpsMatch[1],
       owner: httpsMatch[2],
@@ -49,7 +49,7 @@ export function parseRepoUrl(
   }
 
   const sshMatch = url.match(/git@([^:]+):([^/]+)\/(.+)/);
-  if (sshMatch && sshMatch[1] && sshMatch[2] && sshMatch[3]) {
+  if (sshMatch?.[1] && sshMatch[2] && sshMatch[3]) {
     return {
       host: sshMatch[1],
       owner: sshMatch[2],
@@ -125,17 +125,9 @@ async function cloneAtTag(
 
   for (const tag of tagsToTry) {
     try {
-      await git.clone(repoUrl, targetPath, [
-        "--depth",
-        "1",
-        "--branch",
-        tag,
-        "--single-branch",
-      ]);
+      await git.clone(repoUrl, targetPath, ["--depth", "1", "--branch", tag, "--single-branch"]);
       return { success: true, tag };
-    } catch {
-      continue;
-    }
+    } catch {}
   }
 
   try {
@@ -160,13 +152,7 @@ async function cloneAtRef(
   ref: string,
 ): Promise<{ readonly success: boolean; readonly ref?: string; readonly error?: string }> {
   try {
-    await git.clone(repoUrl, targetPath, [
-      "--depth",
-      "1",
-      "--branch",
-      ref,
-      "--single-branch",
-    ]);
+    await git.clone(repoUrl, targetPath, ["--depth", "1", "--branch", ref, "--single-branch"]);
     return { success: true, ref };
   } catch {
     // fall through
@@ -323,7 +309,9 @@ export async function removePackageSource(
 
   const pkgRepoPath = extractRepoPath(pkg.path);
   const otherPackagesUsingSameRepo = sources.packages.filter(
-    (p) => extractRepoPath(p.path) === pkgRepoPath && !(p.name === packageName && p.registry === registry),
+    (p) =>
+      extractRepoPath(p.path) === pkgRepoPath &&
+      !(p.name === packageName && p.registry === registry),
   );
 
   let repoRemoved = false;
@@ -356,12 +344,10 @@ async function cleanupEmptyParentDirs(relativePath: string, cwd: string): Promis
   const parts = relativePath.split("/");
   if (parts.length < 4) return;
 
-  // parts.length >= 4, so parts[0..2] are guaranteed to exist
-  const part0 = parts[0] as string;
-  const part1 = parts[1] as string;
-  const part2 = parts[2] as string;
+  // parts.length >= 4, so destructuring is safe
+  const [part0, part1, part2] = parts as [string, string, string, ...string[]];
 
-  const { readdir } = await import("fs/promises");
+  const { readdir } = await import("node:fs/promises");
   const opnsrcDir = getOpnsrcDir(cwd);
 
   const ownerDir = join(opnsrcDir, part0, part1, part2);

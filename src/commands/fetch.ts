@@ -1,36 +1,29 @@
 import ora from "ora";
 import pc from "picocolors";
 import {
-  detectInputType,
-  parsePackageSpec,
-  resolvePackage,
-} from "../lib/registries/index.js";
-import { parseRepoSpec, resolveRepo } from "../lib/repo.js";
-import { detectInstalledVersion } from "../lib/version.js";
-import {
-  fetchSource,
-  fetchRepoSource,
-  repoExists,
-  packageRepoExists,
-  listSources,
-  getPackageInfo,
-  getRepoInfo,
-  getRepoRelativePath,
-  getRepoDisplayName,
-} from "../lib/git.js";
-import { ensureGitignore } from "../lib/gitignore.js";
-import { ensureTsconfigExclude } from "../lib/tsconfig.js";
-import {
-  updateAgentsMd,
-  updatePackageIndex,
   type PackageEntry,
   type RepoEntry,
+  updateAgentsMd,
+  updatePackageIndex,
 } from "../lib/agents.js";
 import {
-  getFileModificationPermission,
-  setFileModificationPermission,
-} from "../lib/settings.js";
+  fetchRepoSource,
+  fetchSource,
+  getPackageInfo,
+  getRepoDisplayName,
+  getRepoInfo,
+  getRepoRelativePath,
+  listSources,
+  packageRepoExists,
+  repoExists,
+} from "../lib/git.js";
+import { ensureGitignore } from "../lib/gitignore.js";
 import { confirm } from "../lib/prompt.js";
+import { detectInputType, parsePackageSpec, resolvePackage } from "../lib/registries/index.js";
+import { parseRepoSpec, resolveRepo } from "../lib/repo.js";
+import { getFileModificationPermission, setFileModificationPermission } from "../lib/settings.js";
+import { ensureTsconfigExclude } from "../lib/tsconfig.js";
+import { detectInstalledVersion } from "../lib/version.js";
 import type { FetchResult, Registry } from "../types.js";
 
 export interface FetchOptions {
@@ -51,9 +44,9 @@ async function checkFileModificationPermission(
   if (cliOverride !== undefined) {
     await setFileModificationPermission(cliOverride, cwd);
     if (cliOverride) {
-      console.log(pc.green("✓") + " File modifications enabled (--modify)");
+      console.log(`${pc.green("✓")} File modifications enabled (--modify)`);
     } else {
-      console.log(pc.red("✗") + " File modifications disabled (--modify=false)");
+      console.log(`${pc.red("✗")} File modifications disabled (--modify=false)`);
     }
     return cliOverride;
   }
@@ -70,9 +63,9 @@ async function checkFileModificationPermission(
   await setFileModificationPermission(allowed, cwd);
 
   if (allowed) {
-    console.log(pc.green("✓") + " Permission granted - saved to opnsrc/settings.json\n");
+    console.log(`${pc.green("✓")} Permission granted - saved to opnsrc/settings.json\n`);
   } else {
-    console.log(pc.red("✗") + " Permission denied - saved to opnsrc/settings.json\n");
+    console.log(`${pc.red("✗")} Permission denied - saved to opnsrc/settings.json\n`);
   }
 
   return allowed;
@@ -82,29 +75,42 @@ async function fetchRepoInput(spec: string, cwd: string): Promise<FetchResult> {
   const repoSpec = parseRepoSpec(spec);
 
   if (!repoSpec) {
-    return { package: spec, version: "", path: "", success: false, error: `Invalid repository format: ${spec}` };
+    return {
+      package: spec,
+      version: "",
+      path: "",
+      success: false,
+      error: `Invalid repository format: ${spec}`,
+    };
   }
 
   const displayName = `${repoSpec.host}/${repoSpec.owner}/${repoSpec.repo}`;
-  const spinner = ora(`Fetching ${pc.white(repoSpec.owner + "/" + repoSpec.repo)} from ${repoSpec.host}`).start();
+  const spinner = ora(
+    `Fetching ${pc.white(`${repoSpec.owner}/${repoSpec.repo}`)} from ${repoSpec.host}`,
+  ).start();
 
   try {
     if (repoExists(displayName, cwd)) {
       const existing = await getRepoInfo(displayName, cwd);
       if (existing && repoSpec.ref && existing.version === repoSpec.ref) {
         spinner.succeed(`Already up to date (${repoSpec.ref})`);
-        return { package: displayName, version: existing.version, path: getRepoRelativePath(displayName), success: true };
+        return {
+          package: displayName,
+          version: existing.version,
+          path: getRepoRelativePath(displayName),
+          success: true,
+        };
       }
     }
 
-    spinner.text = `Resolving ${pc.white(repoSpec.owner + "/" + repoSpec.repo)}...`;
+    spinner.text = `Resolving ${pc.white(`${repoSpec.owner}/${repoSpec.repo}`)}...`;
     const resolved = await resolveRepo(repoSpec);
     spinner.text = `Cloning at ${pc.white(resolved.ref)}...`;
     const result = await fetchRepoSource(resolved, cwd);
 
     if (result.success) {
-      spinner.succeed(`Saved to ${pc.gray("opnsrc/" + result.path)}`);
-      if (result.error) console.log(pc.yellow("  ⚠ " + result.error));
+      spinner.succeed(`Saved to ${pc.gray(`opnsrc/${result.path}`)}`);
+      if (result.error) console.log(pc.yellow(`  ⚠ ${result.error}`));
     } else {
       spinner.fail(`Failed: ${result.error}`);
     }
@@ -137,7 +143,13 @@ async function fetchPackageInput(spec: string, cwd: string): Promise<FetchResult
     const existingPkg = await getPackageInfo(name, cwd, registry);
     if (existingPkg && existingPkg.version === version) {
       spinner.succeed(`Already up to date (${existingPkg.version})`);
-      return { package: name, version: existingPkg.version, path: existingPkg.path, success: true, registry };
+      return {
+        package: name,
+        version: existingPkg.version,
+        path: existingPkg.path,
+        success: true,
+        registry,
+      };
     }
 
     spinner.text = `Resolving ${pc.white(name)}...`;
@@ -151,8 +163,8 @@ async function fetchPackageInput(spec: string, cwd: string): Promise<FetchResult
     const result = await fetchSource(resolved, cwd);
 
     if (result.success) {
-      spinner.succeed(`Saved to ${pc.gray("opnsrc/" + result.path)}`);
-      if (result.error) console.log(pc.yellow("  ⚠ " + result.error));
+      spinner.succeed(`Saved to ${pc.gray(`opnsrc/${result.path}`)}`);
+      if (result.error) console.log(pc.yellow(`  ⚠ ${result.error}`));
     } else {
       spinner.fail(`Failed: ${result.error}`);
     }
@@ -222,10 +234,10 @@ export async function fetchCommand(
 
   if (canModifyFiles) {
     const gitignoreUpdated = await ensureGitignore(cwd);
-    if (gitignoreUpdated) console.log(pc.green("✓") + " Added opnsrc/ to .gitignore");
+    if (gitignoreUpdated) console.log(`${pc.green("✓")} Added opnsrc/ to .gitignore`);
 
     const tsconfigUpdated = await ensureTsconfigExclude(cwd);
-    if (tsconfigUpdated) console.log(pc.green("✓") + " Added opnsrc/ to tsconfig.json exclude");
+    if (tsconfigUpdated) console.log(`${pc.green("✓")} Added opnsrc/ to tsconfig.json exclude`);
   }
 
   for (const spec of packages) {
@@ -244,7 +256,7 @@ export async function fetchCommand(
   const failed = results.filter((r) => !r.success);
 
   console.log(
-    `\n${pc.white("Done:")} ${pc.green(String(successful.length) + " succeeded")}, ${pc.red(String(failed.length) + " failed")}`,
+    `\n${pc.white("Done:")} ${pc.green(`${String(successful.length)} succeeded`)}, ${pc.red(`${String(failed.length)} failed`)}`,
   );
 
   if (successful.length > 0) {
@@ -260,7 +272,7 @@ export async function fetchCommand(
 
     if (canModifyFiles) {
       const agentsUpdated = await updateAgentsMd(mergedSources, cwd);
-      if (agentsUpdated) console.log(pc.green("✓") + " Updated AGENTS.md");
+      if (agentsUpdated) console.log(`${pc.green("✓")} Updated AGENTS.md`);
     } else {
       await updatePackageIndex(mergedSources, cwd);
     }

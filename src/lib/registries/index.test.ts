@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { detectRegistry, parsePackageSpec, detectInputType } from "./index.js";
+import { describe, expect, it } from "vitest";
+import { detectInputType, detectRegistry, parsePackageSpec } from "./index.js";
 
 describe("detectRegistry", () => {
   describe("npm registry", () => {
@@ -30,7 +30,10 @@ describe("detectRegistry", () => {
     });
 
     it("detects python: prefix", () => {
-      expect(detectRegistry("python:requests")).toEqual({ registry: "pypi", cleanSpec: "requests" });
+      expect(detectRegistry("python:requests")).toEqual({
+        registry: "pypi",
+        cleanSpec: "requests",
+      });
     });
 
     it("handles case-insensitive prefixes", () => {
@@ -54,15 +57,24 @@ describe("detectRegistry", () => {
 
   describe("preserves version in cleanSpec", () => {
     it("npm with version", () => {
-      expect(detectRegistry("npm:lodash@4.17.21")).toEqual({ registry: "npm", cleanSpec: "lodash@4.17.21" });
+      expect(detectRegistry("npm:lodash@4.17.21")).toEqual({
+        registry: "npm",
+        cleanSpec: "lodash@4.17.21",
+      });
     });
 
     it("pypi with version", () => {
-      expect(detectRegistry("pypi:requests==2.31.0")).toEqual({ registry: "pypi", cleanSpec: "requests==2.31.0" });
+      expect(detectRegistry("pypi:requests==2.31.0")).toEqual({
+        registry: "pypi",
+        cleanSpec: "requests==2.31.0",
+      });
     });
 
     it("crates with version", () => {
-      expect(detectRegistry("crates:serde@1.0.0")).toEqual({ registry: "crates", cleanSpec: "serde@1.0.0" });
+      expect(detectRegistry("crates:serde@1.0.0")).toEqual({
+        registry: "crates",
+        cleanSpec: "serde@1.0.0",
+      });
     });
   });
 });
@@ -70,59 +82,115 @@ describe("detectRegistry", () => {
 describe("parsePackageSpec", () => {
   describe("npm packages", () => {
     it("parses npm package without prefix", () => {
-      expect(parsePackageSpec("lodash")).toEqual({ registry: "npm", name: "lodash", version: undefined });
+      expect(parsePackageSpec("lodash")).toEqual({
+        registry: "npm",
+        name: "lodash",
+        version: undefined,
+      });
     });
 
     it("parses npm package with prefix", () => {
-      expect(parsePackageSpec("npm:lodash@4.17.21")).toEqual({ registry: "npm", name: "lodash", version: "4.17.21" });
+      expect(parsePackageSpec("npm:lodash@4.17.21")).toEqual({
+        registry: "npm",
+        name: "lodash",
+        version: "4.17.21",
+      });
     });
 
     it("parses scoped npm package", () => {
-      expect(parsePackageSpec("@babel/core@7.23.0")).toEqual({ registry: "npm", name: "@babel/core", version: "7.23.0" });
+      expect(parsePackageSpec("@babel/core@7.23.0")).toEqual({
+        registry: "npm",
+        name: "@babel/core",
+        version: "7.23.0",
+      });
     });
   });
 
   describe("pypi packages", () => {
     it("parses pypi package", () => {
-      expect(parsePackageSpec("pypi:requests")).toEqual({ registry: "pypi", name: "requests", version: undefined });
+      expect(parsePackageSpec("pypi:requests")).toEqual({
+        registry: "pypi",
+        name: "requests",
+        version: undefined,
+      });
     });
 
     it("parses pypi package with == version", () => {
-      expect(parsePackageSpec("pypi:requests==2.31.0")).toEqual({ registry: "pypi", name: "requests", version: "2.31.0" });
+      expect(parsePackageSpec("pypi:requests==2.31.0")).toEqual({
+        registry: "pypi",
+        name: "requests",
+        version: "2.31.0",
+      });
     });
 
     it("parses pypi package with @ version", () => {
-      expect(parsePackageSpec("pip:django@4.2.0")).toEqual({ registry: "pypi", name: "django", version: "4.2.0" });
+      expect(parsePackageSpec("pip:django@4.2.0")).toEqual({
+        registry: "pypi",
+        name: "django",
+        version: "4.2.0",
+      });
     });
   });
 
   describe("crates packages", () => {
     it("parses crate", () => {
-      expect(parsePackageSpec("crates:serde")).toEqual({ registry: "crates", name: "serde", version: undefined });
+      expect(parsePackageSpec("crates:serde")).toEqual({
+        registry: "crates",
+        name: "serde",
+        version: undefined,
+      });
     });
 
     it("parses crate with version", () => {
-      expect(parsePackageSpec("cargo:tokio@1.35.0")).toEqual({ registry: "crates", name: "tokio", version: "1.35.0" });
+      expect(parsePackageSpec("cargo:tokio@1.35.0")).toEqual({
+        registry: "crates",
+        name: "tokio",
+        version: "1.35.0",
+      });
     });
   });
 });
 
 describe("detectInputType", () => {
   describe("detects packages", () => {
-    it("npm package (default)", () => { expect(detectInputType("lodash")).toBe("package"); });
-    it("npm package with prefix", () => { expect(detectInputType("npm:react")).toBe("package"); });
-    it("scoped npm package", () => { expect(detectInputType("@babel/core")).toBe("package"); });
-    it("pypi package", () => { expect(detectInputType("pypi:requests")).toBe("package"); });
-    it("crates package", () => { expect(detectInputType("crates:serde")).toBe("package"); });
-    it("package with version", () => { expect(detectInputType("lodash@4.17.21")).toBe("package"); });
+    it("npm package (default)", () => {
+      expect(detectInputType("lodash")).toBe("package");
+    });
+    it("npm package with prefix", () => {
+      expect(detectInputType("npm:react")).toBe("package");
+    });
+    it("scoped npm package", () => {
+      expect(detectInputType("@babel/core")).toBe("package");
+    });
+    it("pypi package", () => {
+      expect(detectInputType("pypi:requests")).toBe("package");
+    });
+    it("crates package", () => {
+      expect(detectInputType("crates:serde")).toBe("package");
+    });
+    it("package with version", () => {
+      expect(detectInputType("lodash@4.17.21")).toBe("package");
+    });
   });
 
   describe("detects repos", () => {
-    it("github: prefix", () => { expect(detectInputType("github:vercel/ai")).toBe("repo"); });
-    it("GitHub URL", () => { expect(detectInputType("https://github.com/vercel/ai")).toBe("repo"); });
-    it("owner/repo format", () => { expect(detectInputType("vercel/ai")).toBe("repo"); });
-    it("host/owner/repo format", () => { expect(detectInputType("github.com/vercel/ai")).toBe("repo"); });
-    it("gitlab: prefix", () => { expect(detectInputType("gitlab:owner/repo")).toBe("repo"); });
-    it("GitLab URL", () => { expect(detectInputType("https://gitlab.com/owner/repo")).toBe("repo"); });
+    it("github: prefix", () => {
+      expect(detectInputType("github:vercel/ai")).toBe("repo");
+    });
+    it("GitHub URL", () => {
+      expect(detectInputType("https://github.com/vercel/ai")).toBe("repo");
+    });
+    it("owner/repo format", () => {
+      expect(detectInputType("vercel/ai")).toBe("repo");
+    });
+    it("host/owner/repo format", () => {
+      expect(detectInputType("github.com/vercel/ai")).toBe("repo");
+    });
+    it("gitlab: prefix", () => {
+      expect(detectInputType("gitlab:owner/repo")).toBe("repo");
+    });
+    it("GitLab URL", () => {
+      expect(detectInputType("https://gitlab.com/owner/repo")).toBe("repo");
+    });
   });
 });

@@ -1,6 +1,6 @@
-import { readFile } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import type { InstalledPackage } from "../types.js";
 
 interface PackageJson {
@@ -18,10 +18,7 @@ function stripVersionPrefix(version: string): string {
   return version.replace(/^[\^~>=<]+/, "");
 }
 
-async function getVersionFromNodeModules(
-  packageName: string,
-  cwd: string,
-): Promise<string | null> {
+async function getVersionFromNodeModules(packageName: string, cwd: string): Promise<string | null> {
   const pkgPath = join(cwd, "node_modules", packageName, "package.json");
   if (!existsSync(pkgPath)) return null;
 
@@ -34,10 +31,7 @@ async function getVersionFromNodeModules(
   }
 }
 
-async function getVersionFromPackageLock(
-  packageName: string,
-  cwd: string,
-): Promise<string | null> {
+async function getVersionFromPackageLock(packageName: string, cwd: string): Promise<string | null> {
   const lockPath = join(cwd, "package-lock.json");
   if (!existsSync(lockPath)) return null;
 
@@ -46,13 +40,11 @@ async function getVersionFromPackageLock(
     const lock = JSON.parse(content) as PackageLockJson;
 
     const key = `node_modules/${packageName}`;
-    if (lock.packages?.[key]?.version) {
-      return lock.packages[key]?.version ?? null;
-    }
+    const pkgVersion = lock.packages?.[key]?.version;
+    if (pkgVersion) return pkgVersion;
 
-    if (lock.dependencies?.[packageName]?.version) {
-      return lock.dependencies[packageName]?.version ?? null;
-    }
+    const depVersion = lock.dependencies?.[packageName]?.version;
+    if (depVersion) return depVersion;
 
     return null;
   } catch {
@@ -60,10 +52,7 @@ async function getVersionFromPackageLock(
   }
 }
 
-async function getVersionFromPnpmLock(
-  packageName: string,
-  cwd: string,
-): Promise<string | null> {
+async function getVersionFromPnpmLock(packageName: string, cwd: string): Promise<string | null> {
   const lockPath = join(cwd, "pnpm-lock.yaml");
   if (!existsSync(lockPath)) return null;
 
@@ -81,10 +70,7 @@ async function getVersionFromPnpmLock(
   }
 }
 
-async function getVersionFromYarnLock(
-  packageName: string,
-  cwd: string,
-): Promise<string | null> {
+async function getVersionFromYarnLock(packageName: string, cwd: string): Promise<string | null> {
   const lockPath = join(cwd, "yarn.lock");
   if (!existsSync(lockPath)) return null;
 
@@ -105,10 +91,7 @@ async function getVersionFromYarnLock(
   }
 }
 
-async function getVersionFromPackageJson(
-  packageName: string,
-  cwd: string,
-): Promise<string | null> {
+async function getVersionFromPackageJson(packageName: string, cwd: string): Promise<string | null> {
   const pkgPath = join(cwd, "package.json");
   if (!existsSync(pkgPath)) return null;
 

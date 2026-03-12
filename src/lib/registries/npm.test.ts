@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { parseNpmSpec } from "./npm.js";
 
 describe("parseNpmSpec", () => {
@@ -34,15 +34,24 @@ describe("parseNpmSpec", () => {
     });
 
     it("parses scoped package@version", () => {
-      expect(parseNpmSpec("@babel/core@7.23.0")).toEqual({ name: "@babel/core", version: "7.23.0" });
+      expect(parseNpmSpec("@babel/core@7.23.0")).toEqual({
+        name: "@babel/core",
+        version: "7.23.0",
+      });
     });
 
     it("parses @types packages", () => {
-      expect(parseNpmSpec("@types/node@20.10.0")).toEqual({ name: "@types/node", version: "20.10.0" });
+      expect(parseNpmSpec("@types/node@20.10.0")).toEqual({
+        name: "@types/node",
+        version: "20.10.0",
+      });
     });
 
     it("handles complex scoped names", () => {
-      expect(parseNpmSpec("@emotion/react@11.11.0")).toEqual({ name: "@emotion/react", version: "11.11.0" });
+      expect(parseNpmSpec("@emotion/react@11.11.0")).toEqual({
+        name: "@emotion/react",
+        version: "11.11.0",
+      });
     });
   });
 
@@ -56,7 +65,10 @@ describe("parseNpmSpec", () => {
     });
 
     it("handles build metadata", () => {
-      expect(parseNpmSpec("pkg@1.0.0+build.123")).toEqual({ name: "pkg", version: "1.0.0+build.123" });
+      expect(parseNpmSpec("pkg@1.0.0+build.123")).toEqual({
+        name: "pkg",
+        version: "1.0.0+build.123",
+      });
     });
   });
 });

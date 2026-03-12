@@ -1,14 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./commands/fetch.js", () => ({ fetchCommand: vi.fn() }));
 vi.mock("./commands/list.js", () => ({ listCommand: vi.fn() }));
 vi.mock("./commands/remove.js", () => ({ removeCommand: vi.fn() }));
 vi.mock("./commands/clean.js", () => ({ cleanCommand: vi.fn() }));
 
-import { createProgram } from "./index.js";
+import { cleanCommand } from "./commands/clean.js";
 import { listCommand } from "./commands/list.js";
 import { removeCommand } from "./commands/remove.js";
-import { cleanCommand } from "./commands/clean.js";
+import { createProgram } from "./index.js";
 
 beforeEach(() => {
   vi.clearAllMocks();

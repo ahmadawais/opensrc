@@ -1,8 +1,8 @@
-import { rm } from "fs/promises";
-import { existsSync } from "fs";
+import { existsSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import pc from "picocolors";
+import { type PackageEntry, type RepoEntry, updateAgentsMd } from "../lib/agents.js";
 import { getReposDir, listSources } from "../lib/git.js";
-import { updateAgentsMd, type PackageEntry, type RepoEntry } from "../lib/agents.js";
 import type { Registry } from "../types.js";
 
 export interface CleanOptions {
@@ -21,7 +21,7 @@ function extractRepoPath(fullPath: string): string {
 }
 
 async function cleanupEmptyDirs(dir: string): Promise<boolean> {
-  const { readdir, rmdir } = await import("fs/promises");
+  const { readdir, rmdir } = await import("node:fs/promises");
 
   try {
     const entries = await readdir(dir, { withFileTypes: true });
@@ -47,8 +47,7 @@ async function cleanupEmptyDirs(dir: string): Promise<boolean> {
 export async function cleanCommand(options: CleanOptions = {}): Promise<void> {
   const cwd = options.cwd ?? process.cwd();
   const cleanPackages = options.packages || (!options.packages && !options.repos);
-  const cleanRepos =
-    options.repos || (!options.packages && !options.repos && !options.registry);
+  const cleanRepos = options.repos || (!options.packages && !options.repos && !options.registry);
 
   let packagesRemoved = 0;
   let reposRemoved = 0;
@@ -98,9 +97,9 @@ export async function cleanCommand(options: CleanOptions = {}): Promise<void> {
 
   if (cleanPackages) {
     if (options.registry) {
-      console.log(pc.green("✓") + ` Removed ${packagesRemoved} ${options.registry} package(s)`);
+      console.log(`${pc.green("✓")} Removed ${packagesRemoved} ${options.registry} package(s)`);
     } else if (packagesRemoved > 0) {
-      console.log(pc.green("✓") + ` Removed ${packagesRemoved} package(s)`);
+      console.log(`${pc.green("✓")} Removed ${packagesRemoved} package(s)`);
     } else {
       console.log(pc.gray("No packages to remove"));
     }
@@ -108,7 +107,7 @@ export async function cleanCommand(options: CleanOptions = {}): Promise<void> {
 
   if (cleanRepos) {
     if (reposRemoved > 0) {
-      console.log(pc.green("✓") + ` Removed ${reposRemoved} repo(s)`);
+      console.log(`${pc.green("✓")} Removed ${reposRemoved} repo(s)`);
     } else {
       console.log(pc.gray("No repos to remove"));
     }
@@ -121,7 +120,7 @@ export async function cleanCommand(options: CleanOptions = {}): Promise<void> {
 
     const totalRemaining = remainingPackages.length + remainingRepos.length;
     if (totalRemaining === 0) {
-      console.log(pc.green("✓") + " Updated sources.json");
+      console.log(`${pc.green("✓")} Updated sources.json`);
     }
   }
 

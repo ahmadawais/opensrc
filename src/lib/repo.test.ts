@@ -1,21 +1,26 @@
-import { describe, it, expect } from "vitest";
-import {
-  parseRepoSpec,
-  isRepoSpec,
-  displayNameToSpec,
-  displayNameToOwnerRepo,
-} from "./repo.js";
+import { describe, expect, it } from "vitest";
+import { displayNameToOwnerRepo, displayNameToSpec, isRepoSpec, parseRepoSpec } from "./repo.js";
 
 describe("parseRepoSpec", () => {
   describe("github: prefix", () => {
     it("parses github:owner/repo", () => {
       const result = parseRepoSpec("github:vercel/next.js");
-      expect(result).toEqual({ host: "github.com", owner: "vercel", repo: "next.js", ref: undefined });
+      expect(result).toEqual({
+        host: "github.com",
+        owner: "vercel",
+        repo: "next.js",
+        ref: undefined,
+      });
     });
 
     it("parses github:owner/repo@ref", () => {
       const result = parseRepoSpec("github:vercel/next.js@v14.0.0");
-      expect(result).toEqual({ host: "github.com", owner: "vercel", repo: "next.js", ref: "v14.0.0" });
+      expect(result).toEqual({
+        host: "github.com",
+        owner: "vercel",
+        repo: "next.js",
+        ref: "v14.0.0",
+      });
     });
 
     it("parses github:owner/repo#ref", () => {
@@ -27,19 +32,34 @@ describe("parseRepoSpec", () => {
   describe("gitlab: prefix", () => {
     it("parses gitlab:owner/repo", () => {
       const result = parseRepoSpec("gitlab:gitlab-org/gitlab");
-      expect(result).toEqual({ host: "gitlab.com", owner: "gitlab-org", repo: "gitlab", ref: undefined });
+      expect(result).toEqual({
+        host: "gitlab.com",
+        owner: "gitlab-org",
+        repo: "gitlab",
+        ref: undefined,
+      });
     });
 
     it("parses gitlab:owner/repo@ref", () => {
       const result = parseRepoSpec("gitlab:gitlab-org/gitlab@v16.0.0");
-      expect(result).toEqual({ host: "gitlab.com", owner: "gitlab-org", repo: "gitlab", ref: "v16.0.0" });
+      expect(result).toEqual({
+        host: "gitlab.com",
+        owner: "gitlab-org",
+        repo: "gitlab",
+        ref: "v16.0.0",
+      });
     });
   });
 
   describe("bitbucket: prefix", () => {
     it("parses bitbucket:owner/repo", () => {
       const result = parseRepoSpec("bitbucket:atlassian/python-bitbucket");
-      expect(result).toEqual({ host: "bitbucket.org", owner: "atlassian", repo: "python-bitbucket", ref: undefined });
+      expect(result).toEqual({
+        host: "bitbucket.org",
+        owner: "atlassian",
+        repo: "python-bitbucket",
+        ref: undefined,
+      });
     });
   });
 
@@ -61,7 +81,12 @@ describe("parseRepoSpec", () => {
 
     it("parses https://gitlab.com/owner/repo", () => {
       const result = parseRepoSpec("https://gitlab.com/gitlab-org/gitlab");
-      expect(result).toEqual({ host: "gitlab.com", owner: "gitlab-org", repo: "gitlab", ref: undefined });
+      expect(result).toEqual({
+        host: "gitlab.com",
+        owner: "gitlab-org",
+        repo: "gitlab",
+        ref: undefined,
+      });
     });
 
     it("parses http:// URLs", () => {
@@ -73,24 +98,44 @@ describe("parseRepoSpec", () => {
   describe("host/owner/repo format", () => {
     it("parses github.com/owner/repo", () => {
       const result = parseRepoSpec("github.com/vercel/next.js");
-      expect(result).toEqual({ host: "github.com", owner: "vercel", repo: "next.js", ref: undefined });
+      expect(result).toEqual({
+        host: "github.com",
+        owner: "vercel",
+        repo: "next.js",
+        ref: undefined,
+      });
     });
 
     it("parses gitlab.com/owner/repo", () => {
       const result = parseRepoSpec("gitlab.com/gitlab-org/gitlab");
-      expect(result).toEqual({ host: "gitlab.com", owner: "gitlab-org", repo: "gitlab", ref: undefined });
+      expect(result).toEqual({
+        host: "gitlab.com",
+        owner: "gitlab-org",
+        repo: "gitlab",
+        ref: undefined,
+      });
     });
   });
 
   describe("owner/repo format (defaults to github.com)", () => {
     it("parses owner/repo", () => {
       const result = parseRepoSpec("vercel/next.js");
-      expect(result).toEqual({ host: "github.com", owner: "vercel", repo: "next.js", ref: undefined });
+      expect(result).toEqual({
+        host: "github.com",
+        owner: "vercel",
+        repo: "next.js",
+        ref: undefined,
+      });
     });
 
     it("parses owner/repo@ref", () => {
       const result = parseRepoSpec("vercel/next.js@v14.0.0");
-      expect(result).toEqual({ host: "github.com", owner: "vercel", repo: "next.js", ref: "v14.0.0" });
+      expect(result).toEqual({
+        host: "github.com",
+        owner: "vercel",
+        repo: "next.js",
+        ref: "v14.0.0",
+      });
     });
 
     it("parses owner/repo#ref", () => {
@@ -100,12 +145,22 @@ describe("parseRepoSpec", () => {
 
     it("handles repos with dots", () => {
       const result = parseRepoSpec("vercel/next.js");
-      expect(result).toEqual({ host: "github.com", owner: "vercel", repo: "next.js", ref: undefined });
+      expect(result).toEqual({
+        host: "github.com",
+        owner: "vercel",
+        repo: "next.js",
+        ref: undefined,
+      });
     });
 
     it("handles repos with hyphens", () => {
       const result = parseRepoSpec("facebook/react-native");
-      expect(result).toEqual({ host: "github.com", owner: "facebook", repo: "react-native", ref: undefined });
+      expect(result).toEqual({
+        host: "github.com",
+        owner: "facebook",
+        repo: "react-native",
+        ref: undefined,
+      });
     });
   });
 
@@ -136,16 +191,28 @@ describe("parseRepoSpec", () => {
 
 describe("isRepoSpec", () => {
   describe("returns true for repo specs", () => {
-    it("github: prefix", () => { expect(isRepoSpec("github:vercel/ai")).toBe(true); });
-    it("gitlab: prefix", () => { expect(isRepoSpec("gitlab:owner/repo")).toBe(true); });
-    it("bitbucket: prefix", () => { expect(isRepoSpec("bitbucket:owner/repo")).toBe(true); });
+    it("github: prefix", () => {
+      expect(isRepoSpec("github:vercel/ai")).toBe(true);
+    });
+    it("gitlab: prefix", () => {
+      expect(isRepoSpec("gitlab:owner/repo")).toBe(true);
+    });
+    it("bitbucket: prefix", () => {
+      expect(isRepoSpec("bitbucket:owner/repo")).toBe(true);
+    });
     it("GitHub URLs", () => {
       expect(isRepoSpec("https://github.com/vercel/ai")).toBe(true);
       expect(isRepoSpec("http://github.com/vercel/ai")).toBe(true);
     });
-    it("GitLab URLs", () => { expect(isRepoSpec("https://gitlab.com/owner/repo")).toBe(true); });
-    it("Bitbucket URLs", () => { expect(isRepoSpec("https://bitbucket.org/owner/repo")).toBe(true); });
-    it("host/owner/repo format", () => { expect(isRepoSpec("github.com/vercel/ai")).toBe(true); });
+    it("GitLab URLs", () => {
+      expect(isRepoSpec("https://gitlab.com/owner/repo")).toBe(true);
+    });
+    it("Bitbucket URLs", () => {
+      expect(isRepoSpec("https://bitbucket.org/owner/repo")).toBe(true);
+    });
+    it("host/owner/repo format", () => {
+      expect(isRepoSpec("github.com/vercel/ai")).toBe(true);
+    });
     it("owner/repo format", () => {
       expect(isRepoSpec("vercel/ai")).toBe(true);
       expect(isRepoSpec("facebook/react")).toBe(true);

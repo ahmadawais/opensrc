@@ -4,13 +4,17 @@ import type { RepoSpec, ResolvedRepo } from "../types.js";
 const SUPPORTED_HOSTS = ["github.com", "gitlab.com", "bitbucket.org"] as const;
 const DEFAULT_HOST = "github.com";
 
-const GitHubApiResponseSchema = z.object({
-  default_branch: z.string(),
-}).passthrough();
+const GitHubApiResponseSchema = z
+  .object({
+    default_branch: z.string(),
+  })
+  .passthrough();
 
-const GitLabApiResponseSchema = z.object({
-  default_branch: z.string(),
-}).passthrough();
+const GitLabApiResponseSchema = z
+  .object({
+    default_branch: z.string(),
+  })
+  .passthrough();
 
 export function parseRepoSpec(spec: string): RepoSpec | null {
   let input = spec.trim();
@@ -34,9 +38,8 @@ export function parseRepoSpec(spec: string): RepoSpec | null {
 
       if (pathParts.length < 2) return null;
 
-      const owner = pathParts[0];
-      let repo = pathParts[1];
-      if (!owner || !repo) return null;
+      const [owner, rawRepo] = pathParts as [string, string, ...string[]];
+      let repo = rawRepo;
 
       if (repo.endsWith(".git")) {
         repo = repo.slice(0, -4);
@@ -131,7 +134,7 @@ async function resolveGitHubRepo(
       );
     }
     if (response.status === 403) {
-      throw new Error(`GitHub API rate limit exceeded. Try again later or authenticate.`);
+      throw new Error("GitHub API rate limit exceeded. Try again later or authenticate.");
     }
     throw new Error(`Failed to fetch repository info: ${response.status} ${response.statusText}`);
   }

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { parseCratesSpec } from "./crates.js";
 
 describe("parseCratesSpec", () => {
@@ -22,11 +22,17 @@ describe("parseCratesSpec", () => {
     });
 
     it("parses complex crate name@version", () => {
-      expect(parseCratesSpec("tokio-util@0.7.10")).toEqual({ name: "tokio-util", version: "0.7.10" });
+      expect(parseCratesSpec("tokio-util@0.7.10")).toEqual({
+        name: "tokio-util",
+        version: "0.7.10",
+      });
     });
 
     it("parses underscore crate@version", () => {
-      expect(parseCratesSpec("serde_json@1.0.108")).toEqual({ name: "serde_json", version: "1.0.108" });
+      expect(parseCratesSpec("serde_json@1.0.108")).toEqual({
+        name: "serde_json",
+        version: "1.0.108",
+      });
     });
   });
 
@@ -36,11 +42,17 @@ describe("parseCratesSpec", () => {
     });
 
     it("handles prerelease versions", () => {
-      expect(parseCratesSpec("tokio@1.0.0-alpha.1")).toEqual({ name: "tokio", version: "1.0.0-alpha.1" });
+      expect(parseCratesSpec("tokio@1.0.0-alpha.1")).toEqual({
+        name: "tokio",
+        version: "1.0.0-alpha.1",
+      });
     });
 
     it("handles build metadata", () => {
-      expect(parseCratesSpec("pkg@1.0.0+metadata")).toEqual({ name: "pkg", version: "1.0.0+metadata" });
+      expect(parseCratesSpec("pkg@1.0.0+metadata")).toEqual({
+        name: "pkg",
+        version: "1.0.0+metadata",
+      });
     });
   });
 });

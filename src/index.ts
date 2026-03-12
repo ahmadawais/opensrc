@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import pc from "picocolors";
-import figlet from "figlet";
 import { Command, Option } from "commander";
+import figlet from "figlet";
+import pc from "picocolors";
+import { cleanCommand } from "./commands/clean.js";
 import { fetchCommand } from "./commands/fetch.js";
 import { listCommand } from "./commands/list.js";
 import { removeCommand } from "./commands/remove.js";
-import { cleanCommand } from "./commands/clean.js";
 import type { Registry } from "./types.js";
 
 const require = createRequire(import.meta.url);

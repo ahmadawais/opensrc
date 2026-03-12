@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { parsePyPISpec } from "./pypi.js";
 
 describe("parsePyPISpec", () => {
@@ -12,7 +12,10 @@ describe("parsePyPISpec", () => {
     });
 
     it("parses package with underscores", () => {
-      expect(parsePyPISpec("typing_extensions")).toEqual({ name: "typing_extensions", version: undefined });
+      expect(parsePyPISpec("typing_extensions")).toEqual({
+        name: "typing_extensions",
+        version: undefined,
+      });
     });
   });
 
@@ -32,7 +35,10 @@ describe("parsePyPISpec", () => {
     });
 
     it("parses complex package name@version", () => {
-      expect(parsePyPISpec("scikit-learn@1.3.0")).toEqual({ name: "scikit-learn", version: "1.3.0" });
+      expect(parsePyPISpec("scikit-learn@1.3.0")).toEqual({
+        name: "scikit-learn",
+        version: "1.3.0",
+      });
     });
   });
 

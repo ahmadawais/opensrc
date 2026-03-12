@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { ResolvedPackage } from "../../types.js";
 
 const CRATES_API = "https://crates.io/api/v1";
-const USER_AGENT = "opnsrc-cli (https://github.com/ahmadawais/opensrc)";
+const USER_AGENT = "opnsrc-cli (https://github.com/ahmadawais/opnsrc)";
 
 const CrateVersionSchema = z.object({
   num: z.string(),
@@ -83,14 +83,20 @@ const GIT_HOSTS = ["github.com", "gitlab.com", "bitbucket.org"] as const;
 function isGitRepoUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return GIT_HOSTS.some((host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`));
+    return GIT_HOSTS.some(
+      (host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`),
+    );
   } catch {
     return false;
   }
 }
 
 function normalizeRepoUrl(url: string): string {
-  return url.replace(/\/+$/, "").replace(/\.git$/, "").replace(/\/tree\/.*$/, "").replace(/\/blob\/.*$/, "");
+  return url
+    .replace(/\/+$/, "")
+    .replace(/\.git$/, "")
+    .replace(/\/tree\/.*$/, "")
+    .replace(/\/blob\/.*$/, "");
 }
 
 function extractRepoUrl(crate: CrateResponse["crate"]): string | null {
@@ -105,10 +111,7 @@ function extractRepoUrl(crate: CrateResponse["crate"]): string | null {
   return null;
 }
 
-export async function resolveCrate(
-  crateName: string,
-  version?: string,
-): Promise<ResolvedPackage> {
+export async function resolveCrate(crateName: string, version?: string): Promise<ResolvedPackage> {
   const info = await fetchCrateInfo(crateName);
   let resolvedVersion = version ?? info.crate.max_version;
 

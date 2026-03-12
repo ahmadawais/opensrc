@@ -1,6 +1,6 @@
-import { readFile, writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { z } from "zod";
 
 const OPNSRC_DIR = "opnsrc";
@@ -45,7 +45,7 @@ export async function writeSettings(
 ): Promise<void> {
   await ensureOpnsrcDir(cwd);
   const settingsPath = getSettingsPath(cwd);
-  await writeFile(settingsPath, JSON.stringify(settings, null, 2) + "\n", "utf-8");
+  await writeFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`, "utf-8");
 }
 
 export async function getFileModificationPermission(

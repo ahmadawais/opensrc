@@ -1,6 +1,6 @@
-import { readFile, writeFile } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import { existsSync } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { z } from "zod";
 
 const OPNSRC_DIR = "opnsrc";
@@ -33,8 +33,7 @@ export async function hasOpnsrcExclude(cwd: string = process.cwd()): Promise<boo
     if (!exclude) return false;
 
     return exclude.some(
-      (entry) =>
-        entry === OPNSRC_DIR || entry === `${OPNSRC_DIR}/` || entry === `./${OPNSRC_DIR}`,
+      (entry) => entry === OPNSRC_DIR || entry === `${OPNSRC_DIR}/` || entry === `./${OPNSRC_DIR}`,
     );
   } catch {
     return false;
@@ -61,7 +60,7 @@ export async function ensureTsconfigExclude(cwd: string = process.cwd()): Promis
     const exclude = config.exclude ? [...config.exclude, OPNSRC_DIR] : [OPNSRC_DIR];
     const updated = { ...config, exclude };
 
-    await writeFile(tsconfigPath, JSON.stringify(updated, null, 2) + "\n", "utf-8");
+    await writeFile(tsconfigPath, `${JSON.stringify(updated, null, 2)}\n`, "utf-8");
     return true;
   } catch {
     return false;

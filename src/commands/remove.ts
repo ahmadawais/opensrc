@@ -1,20 +1,20 @@
 import pc from "picocolors";
 import {
+  type PackageEntry,
+  type RepoEntry,
+  updateAgentsMd,
+  updatePackageIndex,
+} from "../lib/agents.js";
+import {
+  getPackageInfo,
+  listSources,
   removePackageSource,
   removeRepoSource,
   repoExists,
-  listSources,
-  getPackageInfo,
 } from "../lib/git.js";
-import {
-  updateAgentsMd,
-  updatePackageIndex,
-  type PackageEntry,
-  type RepoEntry,
-} from "../lib/agents.js";
+import { detectRegistry } from "../lib/registries/index.js";
 import { isRepoSpec } from "../lib/repo.js";
 import { getFileModificationPermission } from "../lib/settings.js";
-import { detectRegistry } from "../lib/registries/index.js";
 import type { Registry } from "../types.js";
 
 export interface RemoveOptions {
@@ -54,7 +54,7 @@ export async function removeCommand(
       const success = await removeRepoSource(displayName, cwd);
 
       if (success) {
-        console.log(pc.green("  ✓") + ` Removed ${pc.white(displayName)}`);
+        console.log(`${pc.green("  ✓")} Removed ${pc.white(displayName)}`);
         removed++;
         removedRepos.push(displayName);
       } else {
@@ -88,7 +88,7 @@ export async function removeCommand(
     const result = await removePackageSource(cleanSpec, cwd, actualRegistry);
 
     if (result.removed) {
-      console.log(pc.green("  ✓") + ` Removed ${pc.white(cleanSpec)} (${actualRegistry})`);
+      console.log(`${pc.green("  ✓")} Removed ${pc.white(cleanSpec)} (${actualRegistry})`);
       if (result.repoRemoved) {
         console.log(pc.gray("    → Also removed repo (no other packages use it)"));
       }
@@ -109,9 +109,7 @@ export async function removeCommand(
   const remainingPackages: PackageEntry[] = sources.packages.filter(
     (p) => !removedPackages.some((rp) => rp.name === p.name && rp.registry === p.registry),
   );
-  const remainingRepos: RepoEntry[] = sources.repos.filter(
-    (r) => !removedRepos.includes(r.name),
-  );
+  const remainingRepos: RepoEntry[] = sources.repos.filter((r) => !removedRepos.includes(r.name));
 
   const canModifyFiles = await getFileModificationPermission(cwd);
 
@@ -123,9 +121,9 @@ export async function removeCommand(
     if (agentsUpdated) {
       const totalRemaining = remainingPackages.length + remainingRepos.length;
       if (totalRemaining === 0) {
-        console.log(pc.green("✓") + " Removed opnsrc section from AGENTS.md");
+        console.log(`${pc.green("✓")} Removed opnsrc section from AGENTS.md`);
       } else {
-        console.log(pc.green("✓") + " Updated AGENTS.md");
+        console.log(`${pc.green("✓")} Updated AGENTS.md`);
       }
     }
     return;

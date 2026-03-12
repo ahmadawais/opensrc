@@ -1,6 +1,6 @@
-import { readFile, writeFile } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import { existsSync } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import type { Registry } from "../types.js";
 
 const AGENTS_FILE = "AGENTS.md";
@@ -65,7 +65,7 @@ export async function updatePackageIndex(
 
   if (sources.packages.length === 0 && sources.repos.length === 0) {
     if (existsSync(sourcesPath)) {
-      const { rm } = await import("fs/promises");
+      const { rm } = await import("node:fs/promises");
       await rm(sourcesPath, { force: true });
     }
     return;
@@ -128,7 +128,7 @@ ${newSection}
     if (newContent.length > 0 && !newContent.endsWith("\n")) {
       newContent += "\n";
     }
-    newContent += "\n" + newSection;
+    newContent += `\n${newSection}`;
     await writeFile(agentsPath, newContent, "utf-8");
     return true;
   }
@@ -186,10 +186,10 @@ export async function removeOpnsrcSection(cwd: string = process.cwd()): Promise<
 
     let newContent = before;
     if (after) {
-      newContent += "\n\n" + after;
+      newContent += `\n\n${after}`;
     }
 
-    newContent = newContent.replace(/\n{3,}/g, "\n\n").trim() + "\n";
+    newContent = `${newContent.replace(/\n{3,}/g, "\n\n").trim()}\n`;
     await writeFile(agentsPath, newContent, "utf-8");
     return true;
   } catch {

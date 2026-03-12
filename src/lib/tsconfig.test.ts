@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdir, rm, readFile, writeFile } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
-import { hasTsConfig, hasOpnsrcExclude, ensureTsconfigExclude } from "./tsconfig.js";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { ensureTsconfigExclude, hasOpnsrcExclude, hasTsConfig } from "./tsconfig.js";
 
 const TEST_DIR = join(process.cwd(), ".test-tsconfig");
 const TSCONFIG_PATH = join(TEST_DIR, "tsconfig.json");
@@ -115,7 +115,7 @@ describe("ensureTsconfigExclude", () => {
     await writeFile(TSCONFIG_PATH, JSON.stringify({ compilerOptions: {} }));
     await ensureTsconfigExclude(TEST_DIR);
     const content = await readFile(TSCONFIG_PATH, "utf-8");
-    expect(content).toMatch(/^  "/m);
+    expect(content).toMatch(/^ {2}"/m);
   });
 
   it("adds trailing newline", async () => {

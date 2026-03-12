@@ -1,8 +1,8 @@
-import type { Registry, PackageSpec, ResolvedPackage } from "../../types.js";
+import type { PackageSpec, Registry, ResolvedPackage } from "../../types.js";
+import { isRepoSpec } from "../repo.js";
+import { parseCratesSpec, resolveCrate } from "./crates.js";
 import { parseNpmSpec, resolveNpmPackage } from "./npm.js";
 import { parsePyPISpec, resolvePyPIPackage } from "./pypi.js";
-import { parseCratesSpec, resolveCrate } from "./crates.js";
-import { isRepoSpec } from "../repo.js";
 
 export { resolveNpmPackage } from "./npm.js";
 export { resolvePyPIPackage } from "./pypi.js";

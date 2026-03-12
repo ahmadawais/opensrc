@@ -1,21 +1,21 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdir, rm, writeFile } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import { existsSync } from "node:fs";
+import { mkdir, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   getOpnsrcDir,
-  getReposDir,
+  getPackageInfo,
+  getRepoDisplayName,
+  getRepoInfo,
   getRepoPath,
   getRepoRelativePath,
-  parseRepoUrl,
-  getRepoDisplayName,
-  repoExists,
-  packageRepoExists,
-  getPackageInfo,
-  getRepoInfo,
+  getReposDir,
   listSources,
+  packageRepoExists,
+  parseRepoUrl,
   removePackageSource,
   removeRepoSource,
+  repoExists,
 } from "./git.js";
 
 const TEST_DIR = join(process.cwd(), ".test-git");
@@ -228,8 +228,23 @@ describe("sources.json reading", () => {
       await writeFile(
         join(OPNSRC_DIR, "sources.json"),
         JSON.stringify({
-          packages: [{ name: "zod", version: "3.22.0", registry: "npm", path: "repos/github.com/colinhacks/zod", fetchedAt: "2024-01-01" }],
-          repos: [{ name: "github.com/vercel/ai", version: "main", path: "repos/github.com/vercel/ai", fetchedAt: "2024-01-01" }],
+          packages: [
+            {
+              name: "zod",
+              version: "3.22.0",
+              registry: "npm",
+              path: "repos/github.com/colinhacks/zod",
+              fetchedAt: "2024-01-01",
+            },
+          ],
+          repos: [
+            {
+              name: "github.com/vercel/ai",
+              version: "main",
+              path: "repos/github.com/vercel/ai",
+              fetchedAt: "2024-01-01",
+            },
+          ],
         }),
       );
 
@@ -280,8 +295,20 @@ describe("removePackageSource", () => {
       join(OPNSRC_DIR, "sources.json"),
       JSON.stringify({
         packages: [
-          { name: "zod", version: "3.22.0", registry: "npm", path: "repos/github.com/colinhacks/zod", fetchedAt: "2024-01-01" },
-          { name: "zod-bundle", version: "1.0.0", registry: "npm", path: "repos/github.com/colinhacks/zod", fetchedAt: "2024-01-01" },
+          {
+            name: "zod",
+            version: "3.22.0",
+            registry: "npm",
+            path: "repos/github.com/colinhacks/zod",
+            fetchedAt: "2024-01-01",
+          },
+          {
+            name: "zod-bundle",
+            version: "1.0.0",
+            registry: "npm",
+            path: "repos/github.com/colinhacks/zod",
+            fetchedAt: "2024-01-01",
+          },
         ],
       }),
     );

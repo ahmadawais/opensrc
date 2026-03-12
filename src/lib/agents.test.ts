@@ -1,13 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdir, rm, readFile, writeFile } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-  hasOpnsrcSection,
   ensureAgentsMd,
+  hasOpnsrcSection,
+  removeOpnsrcSection,
   updateAgentsMd,
   updatePackageIndex,
-  removeOpnsrcSection,
 } from "./agents.js";
 
 const TEST_DIR = join(process.cwd(), ".test-agents");
@@ -92,10 +92,7 @@ describe("ensureAgentsMd", () => {
 
   it("preserves content before and after section when updating", async () => {
     const oldSection = `${SECTION_MARKER}\n\nOld content\n\n${SECTION_END_MARKER}`;
-    await writeFile(
-      AGENTS_FILE,
-      `# Header\n\nBefore content\n\n${oldSection}\n\nAfter content`,
-    );
+    await writeFile(AGENTS_FILE, `# Header\n\nBefore content\n\n${oldSection}\n\nAfter content`);
 
     await ensureAgentsMd(TEST_DIR);
 

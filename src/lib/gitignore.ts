@@ -1,6 +1,6 @@
-import { readFile, writeFile } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import { existsSync } from "node:fs";
+import { readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 const OPNSRC_ENTRY = "opnsrc/";
 const MARKER_COMMENT = "# opnsrc - source code for packages";

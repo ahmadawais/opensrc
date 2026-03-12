@@ -1,12 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdir, rm, readFile, writeFile } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
-import {
-  hasOpensrcEntry,
-  ensureGitignore,
-  removeFromGitignore,
-} from "./gitignore.js";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { ensureGitignore, hasOpnsrcEntry, removeFromGitignore } from "./gitignore.js";
 
 const TEST_DIR = join(process.cwd(), ".test-gitignore");
 const GITIGNORE_PATH = join(TEST_DIR, ".gitignore");
@@ -21,49 +17,49 @@ afterEach(async () => {
   }
 });
 
-describe("hasOpensrcEntry", () => {
+describe("hasOpnsrcEntry", () => {
   it("returns false if .gitignore does not exist", async () => {
-    expect(await hasOpensrcEntry(TEST_DIR)).toBe(false);
+    expect(await hasOpnsrcEntry(TEST_DIR)).toBe(false);
   });
 
-  it("returns false if .gitignore has no opensrc entry", async () => {
+  it("returns false if .gitignore has no opnsrc entry", async () => {
     await writeFile(GITIGNORE_PATH, "node_modules/\ndist/\n");
-    expect(await hasOpensrcEntry(TEST_DIR)).toBe(false);
+    expect(await hasOpnsrcEntry(TEST_DIR)).toBe(false);
   });
 
-  it("returns true if .gitignore has opensrc/ entry", async () => {
-    await writeFile(GITIGNORE_PATH, "node_modules/\nopensrc/\n");
-    expect(await hasOpensrcEntry(TEST_DIR)).toBe(true);
+  it("returns true if .gitignore has opnsrc/ entry", async () => {
+    await writeFile(GITIGNORE_PATH, "node_modules/\nopnsrc/\n");
+    expect(await hasOpnsrcEntry(TEST_DIR)).toBe(true);
   });
 
-  it("returns true if .gitignore has opensrc entry (without slash)", async () => {
-    await writeFile(GITIGNORE_PATH, "node_modules/\nopensrc\n");
-    expect(await hasOpensrcEntry(TEST_DIR)).toBe(true);
+  it("returns true if .gitignore has opnsrc entry (without slash)", async () => {
+    await writeFile(GITIGNORE_PATH, "node_modules/\nopnsrc\n");
+    expect(await hasOpnsrcEntry(TEST_DIR)).toBe(true);
   });
 
   it("handles whitespace around entry", async () => {
-    await writeFile(GITIGNORE_PATH, "node_modules/\n  opensrc/  \n");
-    expect(await hasOpensrcEntry(TEST_DIR)).toBe(true);
+    await writeFile(GITIGNORE_PATH, "node_modules/\n  opnsrc/  \n");
+    expect(await hasOpnsrcEntry(TEST_DIR)).toBe(true);
   });
 
   it("does not match partial entries", async () => {
-    await writeFile(GITIGNORE_PATH, "my-opensrc/\nopensrc-backup/\n");
-    expect(await hasOpensrcEntry(TEST_DIR)).toBe(false);
+    await writeFile(GITIGNORE_PATH, "my-opnsrc/\nopnsrc-backup/\n");
+    expect(await hasOpnsrcEntry(TEST_DIR)).toBe(false);
   });
 });
 
 describe("ensureGitignore", () => {
-  it("creates .gitignore with opensrc entry if file does not exist", async () => {
+  it("creates .gitignore with opnsrc entry if file does not exist", async () => {
     const result = await ensureGitignore(TEST_DIR);
     expect(result).toBe(true);
     expect(existsSync(GITIGNORE_PATH)).toBe(true);
 
     const content = await readFile(GITIGNORE_PATH, "utf-8");
-    expect(content).toContain("opensrc/");
-    expect(content).toContain("# opensrc");
+    expect(content).toContain("opnsrc/");
+    expect(content).toContain("# opnsrc");
   });
 
-  it("appends opensrc entry to existing .gitignore", async () => {
+  it("appends opnsrc entry to existing .gitignore", async () => {
     await writeFile(GITIGNORE_PATH, "node_modules/\ndist/");
 
     const result = await ensureGitignore(TEST_DIR);
@@ -72,33 +68,26 @@ describe("ensureGitignore", () => {
     const content = await readFile(GITIGNORE_PATH, "utf-8");
     expect(content).toContain("node_modules/");
     expect(content).toContain("dist/");
-    expect(content).toContain("opensrc/");
+    expect(content).toContain("opnsrc/");
   });
 
   it("returns false if entry already exists", async () => {
-    await writeFile(GITIGNORE_PATH, "node_modules/\nopensrc/\n");
-
+    await writeFile(GITIGNORE_PATH, "node_modules/\nopnsrc/\n");
     const result = await ensureGitignore(TEST_DIR);
     expect(result).toBe(false);
   });
 
   it("adds newline before entry if file does not end with newline", async () => {
     await writeFile(GITIGNORE_PATH, "node_modules/");
-
     await ensureGitignore(TEST_DIR);
-
     const content = await readFile(GITIGNORE_PATH, "utf-8");
-    // Should have proper separation
-    expect(content).toMatch(/node_modules\/\n\n.*opensrc/);
+    expect(content).toMatch(/node_modules\/\n\n.*opnsrc/);
   });
 
   it("adds separator newline if file has content", async () => {
     await writeFile(GITIGNORE_PATH, "node_modules/\n");
-
     await ensureGitignore(TEST_DIR);
-
     const content = await readFile(GITIGNORE_PATH, "utf-8");
-    // Should have blank line for separation
     expect(content).toContain("node_modules/\n\n");
   });
 });
@@ -109,57 +98,45 @@ describe("removeFromGitignore", () => {
     expect(result).toBe(false);
   });
 
-  it("returns false if no opensrc entry exists", async () => {
+  it("returns false if no opnsrc entry exists", async () => {
     await writeFile(GITIGNORE_PATH, "node_modules/\ndist/\n");
-
     const result = await removeFromGitignore(TEST_DIR);
     expect(result).toBe(false);
   });
 
-  it("removes opensrc/ entry", async () => {
-    await writeFile(GITIGNORE_PATH, "node_modules/\nopensrc/\ndist/\n");
-
+  it("removes opnsrc/ entry", async () => {
+    await writeFile(GITIGNORE_PATH, "node_modules/\nopnsrc/\ndist/\n");
     const result = await removeFromGitignore(TEST_DIR);
     expect(result).toBe(true);
 
     const content = await readFile(GITIGNORE_PATH, "utf-8");
-    expect(content).not.toContain("opensrc/");
+    expect(content).not.toContain("opnsrc/");
     expect(content).toContain("node_modules/");
     expect(content).toContain("dist/");
   });
 
-  it("removes opensrc entry (without slash)", async () => {
-    await writeFile(GITIGNORE_PATH, "node_modules/\nopensrc\ndist/\n");
-
+  it("removes opnsrc entry (without slash)", async () => {
+    await writeFile(GITIGNORE_PATH, "node_modules/\nopnsrc\ndist/\n");
     await removeFromGitignore(TEST_DIR);
-
     const content = await readFile(GITIGNORE_PATH, "utf-8");
-    expect(content).not.toContain("opensrc");
+    expect(content).not.toContain("opnsrc");
   });
 
   it("removes marker comment", async () => {
     await writeFile(
       GITIGNORE_PATH,
-      "node_modules/\n\n# opensrc - source code for packages\nopensrc/\n",
+      "node_modules/\n\n# opnsrc - source code for packages\nopnsrc/\n",
     );
-
     await removeFromGitignore(TEST_DIR);
-
     const content = await readFile(GITIGNORE_PATH, "utf-8");
-    expect(content).not.toContain("# opensrc");
-    expect(content).not.toContain("opensrc/");
+    expect(content).not.toContain("# opnsrc");
+    expect(content).not.toContain("opnsrc/");
   });
 
   it("cleans up multiple consecutive blank lines", async () => {
-    await writeFile(
-      GITIGNORE_PATH,
-      "node_modules/\n\n\n\nopensrc/\n\n\n\ndist/\n",
-    );
-
+    await writeFile(GITIGNORE_PATH, "node_modules/\n\n\n\nopnsrc/\n\n\n\ndist/\n");
     await removeFromGitignore(TEST_DIR);
-
     const content = await readFile(GITIGNORE_PATH, "utf-8");
-    // Should not have more than 2 consecutive newlines
     expect(content).not.toMatch(/\n{3,}/);
   });
 });

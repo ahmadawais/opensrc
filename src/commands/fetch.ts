@@ -1,45 +1,42 @@
+import ora from "ora";
+import pc from "picocolors";
 import {
-  detectInputType,
-  parsePackageSpec,
-  resolvePackage,
-} from "../lib/registries/index.js";
-import { parseRepoSpec, resolveRepo } from "../lib/repo.js";
-import { detectInstalledVersion } from "../lib/version.js";
-import {
-  fetchSource,
-  fetchRepoSource,
-  repoExists,
-  packageRepoExists,
-  listSources,
-  getPackageInfo,
-  getRepoInfo,
-  getRepoRelativePath,
-  getRepoDisplayName,
-} from "../lib/git.js";
-import { ensureGitignore } from "../lib/gitignore.js";
-import { ensureTsconfigExclude } from "../lib/tsconfig.js";
-import {
-  updateAgentsMd,
-  updatePackageIndex,
   type PackageEntry,
   type RepoEntry,
+  updateAgentsMd,
+  updatePackageIndex,
 } from "../lib/agents.js";
 import {
-  getFileModificationPermission,
-  setFileModificationPermission,
-} from "../lib/settings.js";
+  fetchRepoSource,
+  fetchSource,
+  getPackageInfo,
+  getRepoDisplayName,
+  getRepoInfo,
+  getRepoRelativePath,
+  listSources,
+  packageRepoExists,
+  repoExists,
+} from "../lib/git.js";
+import { ensureGitignore } from "../lib/gitignore.js";
 import { confirm } from "../lib/prompt.js";
+import { detectInputType, parsePackageSpec, resolvePackage } from "../lib/registries/index.js";
+import { parseRepoSpec, resolveRepo } from "../lib/repo.js";
+import { getFileModificationPermission, setFileModificationPermission } from "../lib/settings.js";
+import { ensureTsconfigExclude } from "../lib/tsconfig.js";
+import { detectInstalledVersion } from "../lib/version.js";
 import type { FetchResult, Registry } from "../types.js";
 
 export interface FetchOptions {
-  cwd?: string;
-  /** Override file modification permission: true = allow, false = deny, undefined = prompt */
-  allowModifications?: boolean;
+  readonly cwd?: string;
+  readonly allowModifications?: boolean;
 }
 
-/**
- * Check if file modifications are allowed
- */
+function getRegistryLabel(registry: Registry): string {
+  if (registry === "npm") return "npm";
+  if (registry === "pypi") return "PyPI";
+  return "crates.io";
+}
+
 async function checkFileModificationPermission(
   cwd: string,
   cliOverride?: boolean,
@@ -47,55 +44,33 @@ async function checkFileModificationPermission(
   if (cliOverride !== undefined) {
     await setFileModificationPermission(cliOverride, cwd);
     if (cliOverride) {
-      console.log("✓ File modifications enabled (--modify)");
+      console.log(`${pc.green("✓")} File modifications enabled (--modify)`);
     } else {
-      console.log("✗ File modifications disabled (--modify=false)");
+      console.log(`${pc.red("✗")} File modifications disabled (--modify=false)`);
     }
     return cliOverride;
   }
 
   const storedPermission = await getFileModificationPermission(cwd);
-  if (storedPermission !== undefined) {
-    return storedPermission;
-  }
+  if (storedPermission !== undefined) return storedPermission;
 
-  console.log(
-    "\nopensrc can update the following files for better integration:",
-  );
-  console.log("  • .gitignore - add opensrc/ to ignore list");
-  console.log("  • tsconfig.json - exclude opensrc/ from compilation");
-  console.log("  • AGENTS.md - add source code reference section\n");
+  console.log(pc.gray("\nopnsrc can update the following files for better integration:"));
+  console.log(pc.gray("  • .gitignore - add opnsrc/ to ignore list"));
+  console.log(pc.gray("  • tsconfig.json - exclude opnsrc/ from compilation"));
+  console.log(pc.gray("  • AGENTS.md - add source code reference section\n"));
 
-  const allowed = await confirm("Allow opensrc to modify these files?");
-
+  const allowed = await confirm("Allow opnsrc to modify these files?");
   await setFileModificationPermission(allowed, cwd);
 
   if (allowed) {
-    console.log("✓ Permission granted - saved to opensrc/settings.json\n");
+    console.log(`${pc.green("✓")} Permission granted - saved to opnsrc/settings.json\n`);
   } else {
-    console.log("✗ Permission denied - saved to opensrc/settings.json\n");
+    console.log(`${pc.red("✗")} Permission denied - saved to opnsrc/settings.json\n`);
   }
 
   return allowed;
 }
 
-/**
- * Get registry display name
- */
-function getRegistryLabel(registry: Registry): string {
-  switch (registry) {
-    case "npm":
-      return "npm";
-    case "pypi":
-      return "PyPI";
-    case "crates":
-      return "crates.io";
-  }
-}
-
-/**
- * Fetch a git repository
- */
 async function fetchRepoInput(spec: string, cwd: string): Promise<FetchResult> {
   const repoSpec = parseRepoSpec(spec);
 
@@ -110,96 +85,64 @@ async function fetchRepoInput(spec: string, cwd: string): Promise<FetchResult> {
   }
 
   const displayName = `${repoSpec.host}/${repoSpec.owner}/${repoSpec.repo}`;
-  console.log(
-    `\nFetching ${repoSpec.owner}/${repoSpec.repo} from ${repoSpec.host}...`,
-  );
+  const spinner = ora(
+    `Fetching ${pc.white(`${repoSpec.owner}/${repoSpec.repo}`)} from ${repoSpec.host}`,
+  ).start();
 
   try {
-    // Check if already exists with the same ref
     if (repoExists(displayName, cwd)) {
       const existing = await getRepoInfo(displayName, cwd);
       if (existing && repoSpec.ref && existing.version === repoSpec.ref) {
-        console.log(`  ✓ Already up to date (${repoSpec.ref})`);
+        spinner.succeed(`Already up to date (${repoSpec.ref})`);
         return {
           package: displayName,
           version: existing.version,
           path: getRepoRelativePath(displayName),
           success: true,
         };
-      } else if (existing) {
-        console.log(
-          `  → Updating ${existing.version} → ${repoSpec.ref || "default branch"}`,
-        );
       }
     }
 
-    // Resolve repo info from API
-    console.log(`  → Resolving repository...`);
+    spinner.text = `Resolving ${pc.white(`${repoSpec.owner}/${repoSpec.repo}`)}...`;
     const resolved = await resolveRepo(repoSpec);
-    console.log(`  → Found: ${resolved.repoUrl}`);
-    console.log(`  → Ref: ${resolved.ref}`);
-
-    // Fetch the source
-    console.log(`  → Cloning at ${resolved.ref}...`);
+    spinner.text = `Cloning at ${pc.white(resolved.ref)}...`;
     const result = await fetchRepoSource(resolved, cwd);
 
     if (result.success) {
-      console.log(`  ✓ Saved to opensrc/${result.path}`);
-      if (result.error) {
-        console.log(`  ⚠ ${result.error}`);
-      }
+      spinner.succeed(`Saved to ${pc.gray(`opnsrc/${result.path}`)}`);
+      if (result.error) console.log(pc.yellow(`  ⚠ ${result.error}`));
     } else {
-      console.log(`  ✗ Failed: ${result.error}`);
+      spinner.fail(`Failed: ${result.error}`);
     }
 
     return result;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
-    console.log(`  ✗ Error: ${errorMessage}`);
-    return {
-      package: displayName,
-      version: "",
-      path: "",
-      success: false,
-      error: errorMessage,
-    };
+    spinner.fail(`Error: ${errorMessage}`);
+    return { package: displayName, version: "", path: "", success: false, error: errorMessage };
   }
 }
 
-/**
- * Fetch a package from any registry
- */
-async function fetchPackageInput(
-  spec: string,
-  cwd: string,
-): Promise<FetchResult> {
+async function fetchPackageInput(spec: string, cwd: string): Promise<FetchResult> {
   const packageSpec = parsePackageSpec(spec);
   const { registry, name } = packageSpec;
   let { version } = packageSpec;
 
   const registryLabel = getRegistryLabel(registry);
-  console.log(`\nFetching ${name} from ${registryLabel}...`);
+  const spinner = ora(`Fetching ${pc.white(name)} from ${registryLabel}`).start();
 
   try {
-    // For npm, try to detect installed version if not specified
     if (!version && registry === "npm") {
       const installedVersion = await detectInstalledVersion(name, cwd);
       if (installedVersion) {
         version = installedVersion;
-        console.log(`  → Detected installed version: ${version}`);
-      } else {
-        console.log(`  → No installed version found, using latest`);
+        spinner.text = `Fetching ${pc.white(name)}@${pc.gray(version)} from ${registryLabel}`;
       }
-    } else if (!version) {
-      console.log(`  → Using latest version`);
-    } else {
-      console.log(`  → Using specified version: ${version}`);
     }
 
-    // Check if already exists with the same version
     const existingPkg = await getPackageInfo(name, cwd, registry);
     if (existingPkg && existingPkg.version === version) {
-      console.log(`  ✓ Already up to date (${version})`);
+      spinner.succeed(`Already up to date (${existingPkg.version})`);
       return {
         package: name,
         version: existingPkg.version,
@@ -207,81 +150,46 @@ async function fetchPackageInput(
         success: true,
         registry,
       };
-    } else if (existingPkg) {
-      console.log(
-        `  → Updating ${existingPkg.version} → ${version || "latest"}`,
-      );
     }
 
-    // Resolve package info from registry
-    console.log(`  → Resolving repository...`);
-    const resolved = await resolvePackage({
-      registry,
-      name,
-      version,
-    });
+    spinner.text = `Resolving ${pc.white(name)}...`;
+    const resolved = await resolvePackage({ registry, name, version });
 
-    const repoDisplayName = getRepoDisplayName(resolved.repoUrl);
-    console.log(`  → Found: ${resolved.repoUrl}`);
-
-    if (resolved.repoDirectory) {
-      console.log(`  → Monorepo path: ${resolved.repoDirectory}`);
-    }
-
-    // Check if the repo already exists (might be shared with another package)
     if (packageRepoExists(resolved.repoUrl, cwd)) {
-      console.log(`  → Repo already cloned, checking version...`);
+      spinner.text = `Checking version for ${pc.white(name)}...`;
     }
 
-    // Fetch the source
-    console.log(`  → Cloning at ${resolved.gitTag}...`);
+    spinner.text = `Cloning at ${pc.white(resolved.gitTag)}...`;
     const result = await fetchSource(resolved, cwd);
 
     if (result.success) {
-      console.log(`  ✓ Saved to opensrc/${result.path}`);
-      if (result.error) {
-        console.log(`  ⚠ ${result.error}`);
-      }
+      spinner.succeed(`Saved to ${pc.gray(`opnsrc/${result.path}`)}`);
+      if (result.error) console.log(pc.yellow(`  ⚠ ${result.error}`));
     } else {
-      console.log(`  ✗ Failed: ${result.error}`);
+      spinner.fail(`Failed: ${result.error}`);
     }
 
     return result;
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err);
-    console.log(`  ✗ Error: ${errorMessage}`);
-    return {
-      package: name,
-      version: "",
-      path: "",
-      success: false,
-      error: errorMessage,
-      registry,
-    };
+    spinner.fail(`Error: ${errorMessage}`);
+    return { package: name, version: "", path: "", success: false, error: errorMessage, registry };
   }
 }
 
-/**
- * Merge new results into existing sources
- */
 function mergeResults(
-  existing: {
-    packages: PackageEntry[];
-    repos: RepoEntry[];
-  },
-  results: FetchResult[],
-): {
-  packages: PackageEntry[];
-  repos: RepoEntry[];
-} {
+  existing: { readonly packages: readonly PackageEntry[]; readonly repos: readonly RepoEntry[] },
+  results: readonly FetchResult[],
+): { packages: PackageEntry[]; repos: RepoEntry[] } {
   const now = new Date().toISOString();
+  const packages: PackageEntry[] = [...existing.packages];
+  const repos: RepoEntry[] = [...existing.repos];
 
   for (const result of results) {
     if (!result.success) continue;
 
     if (result.registry) {
-      // It's a package
-      const idx = existing.packages.findIndex(
+      const idx = packages.findIndex(
         (p) => p.name === result.package && p.registry === result.registry,
       );
       const entry: PackageEntry = {
@@ -291,59 +199,45 @@ function mergeResults(
         path: result.path,
         fetchedAt: now,
       };
-
       if (idx >= 0) {
-        existing.packages[idx] = entry;
+        packages[idx] = entry;
       } else {
-        existing.packages.push(entry);
+        packages.push(entry);
       }
     } else {
-      // It's a repo
-      const idx = existing.repos.findIndex((r) => r.name === result.package);
+      const idx = repos.findIndex((r) => r.name === result.package);
       const entry: RepoEntry = {
         name: result.package,
         version: result.version,
         path: result.path,
         fetchedAt: now,
       };
-
       if (idx >= 0) {
-        existing.repos[idx] = entry;
+        repos[idx] = entry;
       } else {
-        existing.repos.push(entry);
+        repos.push(entry);
       }
     }
   }
 
-  return existing;
+  return { packages, repos };
 }
 
-/**
- * Fetch source code for one or more packages or repositories
- */
 export async function fetchCommand(
-  packages: string[],
+  packages: readonly string[],
   options: FetchOptions = {},
-): Promise<FetchResult[]> {
-  const cwd = options.cwd || process.cwd();
+): Promise<readonly FetchResult[]> {
+  const cwd = options.cwd ?? process.cwd();
   const results: FetchResult[] = [];
 
-  // Check if we're allowed to modify files
-  const canModifyFiles = await checkFileModificationPermission(
-    cwd,
-    options.allowModifications,
-  );
+  const canModifyFiles = await checkFileModificationPermission(cwd, options.allowModifications);
 
   if (canModifyFiles) {
     const gitignoreUpdated = await ensureGitignore(cwd);
-    if (gitignoreUpdated) {
-      console.log("✓ Added opensrc/ to .gitignore");
-    }
+    if (gitignoreUpdated) console.log(`${pc.green("✓")} Added opnsrc/ to .gitignore`);
 
     const tsconfigUpdated = await ensureTsconfigExclude(cwd);
-    if (tsconfigUpdated) {
-      console.log("✓ Added opensrc/ to tsconfig.json exclude");
-    }
+    if (tsconfigUpdated) console.log(`${pc.green("✓")} Added opnsrc/ to tsconfig.json exclude`);
   }
 
   for (const spec of packages) {
@@ -358,29 +252,27 @@ export async function fetchCommand(
     }
   }
 
-  // Summary
   const successful = results.filter((r) => r.success);
   const failed = results.filter((r) => !r.success);
 
-  console.log(`\nDone: ${successful.length} succeeded, ${failed.length} failed`);
+  console.log(
+    `\n${pc.white("Done:")} ${pc.green(`${String(successful.length)} succeeded`)}, ${pc.red(`${String(failed.length)} failed`)}`,
+  );
 
   if (successful.length > 0) {
-    console.log("\nSource code available at:");
+    console.log(pc.gray("\nSource code available at:"));
     for (const result of successful) {
-      console.log(`  ${result.package} → opensrc/${result.path}`);
+      console.log(pc.gray(`  ${result.package} → opnsrc/${result.path}`));
     }
   }
 
-  // Update sources.json with all fetched sources
   if (successful.length > 0) {
     const existingSources = await listSources(cwd);
     const mergedSources = mergeResults(existingSources, results);
 
     if (canModifyFiles) {
       const agentsUpdated = await updateAgentsMd(mergedSources, cwd);
-      if (agentsUpdated) {
-        console.log("✓ Updated AGENTS.md");
-      }
+      if (agentsUpdated) console.log(`${pc.green("✓")} Updated AGENTS.md`);
     } else {
       await updatePackageIndex(mergedSources, cwd);
     }

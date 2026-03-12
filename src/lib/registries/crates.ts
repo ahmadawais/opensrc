@@ -1,133 +1,97 @@
+import { z } from "zod";
 import type { ResolvedPackage } from "../../types.js";
 
 const CRATES_API = "https://crates.io/api/v1";
+const USER_AGENT = "opnsrc-cli (https://github.com/ahmadawais/opnsrc)";
 
-interface CrateVersion {
-  num: string;
-  yanked: boolean;
-  created_at: string;
-}
+const CrateVersionSchema = z.object({
+  num: z.string(),
+  yanked: z.boolean(),
+  created_at: z.string(),
+});
 
-interface CrateResponse {
-  crate: {
-    id: string;
-    name: string;
-    max_version: string;
-    repository?: string;
-    homepage?: string;
-  };
-  versions: CrateVersion[];
-}
+const CrateResponseSchema = z.object({
+  crate: z.object({
+    id: z.string(),
+    name: z.string(),
+    max_version: z.string(),
+    repository: z.string().optional(),
+    homepage: z.string().optional(),
+  }),
+  versions: z.array(CrateVersionSchema),
+});
 
-interface CrateVersionResponse {
-  version: {
-    num: string;
-    crate: string;
-    yanked: boolean;
-  };
-}
+const CrateVersionResponseSchema = z.object({
+  version: z.object({
+    num: z.string(),
+    crate: z.string(),
+    yanked: z.boolean(),
+  }),
+});
 
-/**
- * Parse a crates.io package specifier like "serde@1.0.0" into name and version
- */
+type CrateResponse = z.infer<typeof CrateResponseSchema>;
+
 export function parseCratesSpec(spec: string): {
-  name: string;
-  version?: string;
+  readonly name: string;
+  readonly version?: string;
 } {
-  // Handle @ version specifier: serde@1.0.0
   const atIndex = spec.lastIndexOf("@");
   if (atIndex > 0) {
-    return {
-      name: spec.slice(0, atIndex).trim(),
-      version: spec.slice(atIndex + 1).trim(),
-    };
+    return { name: spec.slice(0, atIndex).trim(), version: spec.slice(atIndex + 1).trim() };
   }
-
   return { name: spec.trim() };
 }
 
-/**
- * Fetch crate metadata from crates.io
- */
 async function fetchCrateInfo(crateName: string): Promise<CrateResponse> {
   const url = `${CRATES_API}/crates/${crateName}`;
 
   const response = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      "User-Agent": "opensrc-cli (https://github.com/vercel-labs/opensrc)",
-    },
+    headers: { Accept: "application/json", "User-Agent": USER_AGENT },
   });
 
   if (!response.ok) {
     if (response.status === 404) {
       throw new Error(`Crate "${crateName}" not found on crates.io`);
     }
-    throw new Error(
-      `Failed to fetch crate info: ${response.status} ${response.statusText}`,
-    );
+    throw new Error(`Failed to fetch crate info: ${response.status} ${response.statusText}`);
   }
 
-  return response.json() as Promise<CrateResponse>;
+  return CrateResponseSchema.parse(await response.json());
 }
 
-/**
- * Fetch specific version info from crates.io
- */
-async function fetchCrateVersionInfo(
-  crateName: string,
-  version: string,
-): Promise<CrateVersionResponse> {
+async function fetchCrateVersionInfo(crateName: string, version: string): Promise<void> {
   const url = `${CRATES_API}/crates/${crateName}/${version}`;
 
   const response = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      "User-Agent": "opensrc-cli (https://github.com/vercel-labs/opensrc)",
-    },
+    headers: { Accept: "application/json", "User-Agent": USER_AGENT },
   });
 
   if (!response.ok) {
     if (response.status === 404) {
-      throw new Error(
-        `Version "${version}" not found for crate "${crateName}"`,
-      );
+      throw new Error(`Version "${version}" not found for crate "${crateName}"`);
     }
     throw new Error(
       `Failed to fetch crate version info: ${response.status} ${response.statusText}`,
     );
   }
 
-  return response.json() as Promise<CrateVersionResponse>;
+  CrateVersionResponseSchema.parse(await response.json());
 }
 
-/**
- * Extract repository URL from crate metadata
- */
-function extractRepoUrl(crate: CrateResponse["crate"]): string | null {
-  // Check repository field first
-  if (crate.repository && isGitRepoUrl(crate.repository)) {
-    return normalizeRepoUrl(crate.repository);
-  }
-
-  // Fall back to homepage if it's a git repo
-  if (crate.homepage && isGitRepoUrl(crate.homepage)) {
-    return normalizeRepoUrl(crate.homepage);
-  }
-
-  return null;
-}
+const GIT_HOSTS = ["github.com", "gitlab.com", "bitbucket.org"] as const;
 
 function isGitRepoUrl(url: string): boolean {
-  return (
-    url.includes("github.com") ||
-    url.includes("gitlab.com") ||
-    url.includes("bitbucket.org")
-  );
+  try {
+    const parsed = new URL(url);
+    return GIT_HOSTS.some(
+      (host) => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`),
+    );
+  } catch {
+    return false;
+  }
 }
 
 function normalizeRepoUrl(url: string): string {
-  // Remove trailing slashes and common suffixes
   return url
     .replace(/\/+$/, "")
     .replace(/\.git$/, "")
@@ -135,30 +99,21 @@ function normalizeRepoUrl(url: string): string {
     .replace(/\/blob\/.*$/, "");
 }
 
-/**
- * Get available versions sorted by release date (newest first)
- */
-function getAvailableVersions(versions: CrateVersion[]): string[] {
-  return versions
-    .filter((v) => !v.yanked)
-    .sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-    )
-    .map((v) => v.num);
+function extractRepoUrl(crate: CrateResponse["crate"]): string | null {
+  if (crate.repository && isGitRepoUrl(crate.repository)) {
+    return normalizeRepoUrl(crate.repository);
+  }
+
+  if (crate.homepage && isGitRepoUrl(crate.homepage)) {
+    return normalizeRepoUrl(crate.homepage);
+  }
+
+  return null;
 }
 
-/**
- * Resolve a crate to its repository information
- */
-export async function resolveCrate(
-  crateName: string,
-  version?: string,
-): Promise<ResolvedPackage> {
+export async function resolveCrate(crateName: string, version?: string): Promise<ResolvedPackage> {
   const info = await fetchCrateInfo(crateName);
-
-  // If version specified, verify it exists
-  let resolvedVersion = version || info.crate.max_version;
+  let resolvedVersion = version ?? info.crate.max_version;
 
   if (version) {
     await fetchCrateVersionInfo(crateName, version);
@@ -168,24 +123,23 @@ export async function resolveCrate(
   const repoUrl = extractRepoUrl(info.crate);
 
   if (!repoUrl) {
-    const availableVersions = getAvailableVersions(info.versions)
+    const availableVersions = info.versions
+      .filter((v) => !v.yanked)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5)
+      .map((v) => v.num)
       .join(", ");
+
     throw new Error(
-      `No repository URL found for "${crateName}@${resolvedVersion}". ` +
-        `This crate may not have its source published. ` +
-        `Recent versions: ${availableVersions}`,
+      `No repository URL found for "${crateName}@${resolvedVersion}". This crate may not have its source published. Recent versions: ${availableVersions}`,
     );
   }
-
-  // Rust crates commonly use v1.2.3 as tags
-  const gitTag = `v${resolvedVersion}`;
 
   return {
     registry: "crates",
     name: crateName,
     version: resolvedVersion,
     repoUrl,
-    gitTag,
+    gitTag: `v${resolvedVersion}`,
   };
 }

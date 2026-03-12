@@ -1,87 +1,85 @@
 #!/usr/bin/env node
-
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { Command } from "commander";
+import { Command, Option } from "commander";
+import figlet from "figlet";
+import pc from "picocolors";
+import { cleanCommand } from "./commands/clean.js";
 import { fetchCommand } from "./commands/fetch.js";
 import { listCommand } from "./commands/list.js";
 import { removeCommand } from "./commands/remove.js";
-import { cleanCommand } from "./commands/clean.js";
 import type { Registry } from "./types.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
 
+function renderBanner(): string {
+  const width = process.stdout.columns ?? 80;
+  const font = width >= 100 ? "ANSI Shadow" : "ANSI Compact";
+  try {
+    return pc.white(figlet.textSync("opnsrc", { font }));
+  } catch {
+    return pc.white("opnsrc");
+  }
+}
+
 export function createProgram(): Command {
   const program = new Command();
 
   program
-    .name("opensrc")
-    .description(
-      "Fetch source code for packages to give coding agents deeper context",
-    )
-    .version(pkg.version)
+    .name("opnsrc")
+    .description("Fetch source code for packages to give AI coding agents deeper context")
+    .version(pkg.version, "-v, --version")
+    .helpOption("-h, --help", "display help for command")
     .enablePositionalOptions();
 
-  // Default command: fetch packages
   program
     .argument(
       "[packages...]",
       "packages or repos to fetch (e.g., zod, pypi:requests, crates:serde, owner/repo)",
     )
     .option("--cwd <path>", "working directory (default: current directory)")
+    .addOption(new Option("--local").hideHelp())
     .option(
       "--modify [value]",
       "allow/deny modifying .gitignore, tsconfig.json, AGENTS.md",
-      (val) => {
+      (val: string) => {
         if (val === undefined || val === "" || val === "true") return true;
         if (val === "false") return false;
         return true;
       },
     )
-    .action(
-      async (
-        packages: string[],
-        options: { cwd?: string; modify?: boolean },
-      ) => {
-        if (packages.length === 0) {
-          program.help();
-          return;
-        }
+    .action(async (packages: string[], options: { cwd?: string; modify?: boolean }) => {
+      if (packages.length === 0) {
+        console.log(renderBanner());
+        program.help();
+        return;
+      }
 
-        await fetchCommand(packages, {
-          cwd: options.cwd,
-          allowModifications: options.modify,
-        });
-      },
-    );
+      await fetchCommand(packages, {
+        cwd: options.cwd,
+        allowModifications: options.modify,
+      });
+    });
 
-  // List command
   program
     .command("list")
     .description("List all fetched package sources")
     .option("--json", "output as JSON")
     .option("--cwd <path>", "working directory (default: current directory)")
     .action(async (options: { json?: boolean; cwd?: string }) => {
-      await listCommand({
-        json: options.json,
-        cwd: options.cwd,
-      });
+      await listCommand({ json: options.json, cwd: options.cwd });
     });
 
-  // Remove command
   program
     .command("remove <packages...>")
     .alias("rm")
     .description("Remove fetched source code for packages or repos")
     .option("--cwd <path>", "working directory (default: current directory)")
     .action(async (packages: string[], options: { cwd?: string }) => {
-      await removeCommand(packages, {
-        cwd: options.cwd,
-      });
+      await removeCommand(packages, { cwd: options.cwd });
     });
 
-  // Clean command
   program
     .command("clean")
     .description("Remove all fetched packages and/or repos")

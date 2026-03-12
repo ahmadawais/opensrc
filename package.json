@@ -1,50 +1,46 @@
 {
-  "name": "opensrc",
-  "version": "0.6.0",
-  "description": "Fetch source code for npm packages to give coding agents deeper context",
+  "name": "opnsrc",
+  "version": "0.0.1",
+  "description": "Fetch source code for packages and repos to give AI coding agents deeper context",
   "type": "module",
   "bin": {
-    "opensrc": "./dist/index.js"
+    "opnsrc": "./dist/index.js"
   },
-  "files": [
-    "dist",
-    "README.md"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/vercel-labs/opensrc"
-  },
+  "files": ["dist", "README.md"],
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "build": "tsup",
+    "dev": "tsup --watch",
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
-    "format": "prettier --write \"**/*.{ts,tsx}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx}\"",
-    "type-check": "tsc --noEmit"
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit"
   },
-  "keywords": [
-    "cli",
-    "source-code",
-    "npm",
-    "packages",
-    "ai",
-    "coding-agents"
-  ],
+  "keywords": ["cli", "source-code", "npm", "packages", "ai", "coding-agents"],
   "license": "Apache-2.0",
   "dependencies": {
+    "@clack/prompts": "^0.9.1",
     "commander": "^12.1.0",
-    "simple-git": "^3.27.0"
+    "figlet": "^1.8.0",
+    "ora": "^8.1.1",
+    "picocolors": "^1.1.1",
+    "simple-git": "^3.27.0",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/figlet": "^1.7.0",
     "@types/node": "^22.10.0",
-    "prettier": "^3.4.0",
+    "tsup": "^8.3.5",
     "typescript": "^5.7.0",
-    "vitest": "^4.0.16"
+    "vitest": "^2.1.8"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@biomejs/biome"]
   }
 }

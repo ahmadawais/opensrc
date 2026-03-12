@@ -1,10 +1,5 @@
-import { describe, it, expect } from "vitest";
-import {
-  parseRepoSpec,
-  isRepoSpec,
-  displayNameToSpec,
-  displayNameToOwnerRepo,
-} from "./repo.js";
+import { describe, expect, it } from "vitest";
+import { displayNameToOwnerRepo, displayNameToSpec, isRepoSpec, parseRepoSpec } from "./repo.js";
 
 describe("parseRepoSpec", () => {
   describe("github: prefix", () => {
@@ -30,12 +25,7 @@ describe("parseRepoSpec", () => {
 
     it("parses github:owner/repo#ref", () => {
       const result = parseRepoSpec("github:vercel/next.js#main");
-      expect(result).toEqual({
-        host: "github.com",
-        owner: "vercel",
-        repo: "next.js",
-        ref: "main",
-      });
+      expect(result).toEqual({ host: "github.com", owner: "vercel", repo: "next.js", ref: "main" });
     });
   });
 
@@ -76,32 +66,17 @@ describe("parseRepoSpec", () => {
   describe("full URLs", () => {
     it("parses https://github.com/owner/repo", () => {
       const result = parseRepoSpec("https://github.com/vercel/ai");
-      expect(result).toEqual({
-        host: "github.com",
-        owner: "vercel",
-        repo: "ai",
-        ref: undefined,
-      });
+      expect(result).toEqual({ host: "github.com", owner: "vercel", repo: "ai", ref: undefined });
     });
 
     it("parses https://github.com/owner/repo.git", () => {
       const result = parseRepoSpec("https://github.com/vercel/ai.git");
-      expect(result).toEqual({
-        host: "github.com",
-        owner: "vercel",
-        repo: "ai",
-        ref: undefined,
-      });
+      expect(result).toEqual({ host: "github.com", owner: "vercel", repo: "ai", ref: undefined });
     });
 
     it("parses https://github.com/owner/repo/tree/branch", () => {
       const result = parseRepoSpec("https://github.com/vercel/ai/tree/canary");
-      expect(result).toEqual({
-        host: "github.com",
-        owner: "vercel",
-        repo: "ai",
-        ref: "canary",
-      });
+      expect(result).toEqual({ host: "github.com", owner: "vercel", repo: "ai", ref: "canary" });
     });
 
     it("parses https://gitlab.com/owner/repo", () => {
@@ -116,12 +91,7 @@ describe("parseRepoSpec", () => {
 
     it("parses http:// URLs", () => {
       const result = parseRepoSpec("http://github.com/owner/repo");
-      expect(result).toEqual({
-        host: "github.com",
-        owner: "owner",
-        repo: "repo",
-        ref: undefined,
-      });
+      expect(result).toEqual({ host: "github.com", owner: "owner", repo: "repo", ref: undefined });
     });
   });
 
@@ -170,12 +140,7 @@ describe("parseRepoSpec", () => {
 
     it("parses owner/repo#ref", () => {
       const result = parseRepoSpec("vercel/ai#main");
-      expect(result).toEqual({
-        host: "github.com",
-        owner: "vercel",
-        repo: "ai",
-        ref: "main",
-      });
+      expect(result).toEqual({ host: "github.com", owner: "vercel", repo: "ai", ref: "main" });
     });
 
     it("handles repos with dots", () => {
@@ -219,12 +184,7 @@ describe("parseRepoSpec", () => {
   describe("whitespace handling", () => {
     it("trims whitespace", () => {
       const result = parseRepoSpec("  vercel/ai  ");
-      expect(result).toEqual({
-        host: "github.com",
-        owner: "vercel",
-        repo: "ai",
-        ref: undefined,
-      });
+      expect(result).toEqual({ host: "github.com", owner: "vercel", repo: "ai", ref: undefined });
     });
   });
 });
@@ -234,37 +194,29 @@ describe("isRepoSpec", () => {
     it("github: prefix", () => {
       expect(isRepoSpec("github:vercel/ai")).toBe(true);
     });
-
     it("gitlab: prefix", () => {
       expect(isRepoSpec("gitlab:owner/repo")).toBe(true);
     });
-
     it("bitbucket: prefix", () => {
       expect(isRepoSpec("bitbucket:owner/repo")).toBe(true);
     });
-
     it("GitHub URLs", () => {
       expect(isRepoSpec("https://github.com/vercel/ai")).toBe(true);
       expect(isRepoSpec("http://github.com/vercel/ai")).toBe(true);
     });
-
     it("GitLab URLs", () => {
       expect(isRepoSpec("https://gitlab.com/owner/repo")).toBe(true);
     });
-
     it("Bitbucket URLs", () => {
       expect(isRepoSpec("https://bitbucket.org/owner/repo")).toBe(true);
     });
-
     it("host/owner/repo format", () => {
       expect(isRepoSpec("github.com/vercel/ai")).toBe(true);
     });
-
     it("owner/repo format", () => {
       expect(isRepoSpec("vercel/ai")).toBe(true);
       expect(isRepoSpec("facebook/react")).toBe(true);
     });
-
     it("owner/repo with ref", () => {
       expect(isRepoSpec("vercel/ai@main")).toBe(true);
       expect(isRepoSpec("vercel/ai#canary")).toBe(true);
@@ -277,13 +229,11 @@ describe("isRepoSpec", () => {
       expect(isRepoSpec("@types/node")).toBe(false);
       expect(isRepoSpec("@scope/package@1.0.0")).toBe(false);
     });
-
     it("plain package names", () => {
       expect(isRepoSpec("lodash")).toBe(false);
       expect(isRepoSpec("react")).toBe(false);
       expect(isRepoSpec("zod")).toBe(false);
     });
-
     it("package names with version", () => {
       expect(isRepoSpec("lodash@4.17.0")).toBe(false);
       expect(isRepoSpec("react@18.2.0")).toBe(false);
@@ -317,17 +267,11 @@ describe("displayNameToSpec", () => {
 
 describe("displayNameToOwnerRepo", () => {
   it("handles old format (owner--repo)", () => {
-    expect(displayNameToOwnerRepo("vercel--ai")).toEqual({
-      owner: "vercel",
-      repo: "ai",
-    });
+    expect(displayNameToOwnerRepo("vercel--ai")).toEqual({ owner: "vercel", repo: "ai" });
   });
 
   it("handles new format (host/owner/repo)", () => {
-    expect(displayNameToOwnerRepo("github.com/vercel/ai")).toEqual({
-      owner: "vercel",
-      repo: "ai",
-    });
+    expect(displayNameToOwnerRepo("github.com/vercel/ai")).toEqual({ owner: "vercel", repo: "ai" });
   });
 
   it("returns null for invalid format", () => {

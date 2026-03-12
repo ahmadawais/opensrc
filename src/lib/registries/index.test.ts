@@ -1,50 +1,32 @@
-import { describe, it, expect } from "vitest";
-import { detectRegistry, parsePackageSpec, detectInputType } from "./index.js";
+import { describe, expect, it } from "vitest";
+import { detectInputType, detectRegistry, parsePackageSpec } from "./index.js";
 
 describe("detectRegistry", () => {
   describe("npm registry", () => {
     it("detects npm: prefix", () => {
-      expect(detectRegistry("npm:lodash")).toEqual({
-        registry: "npm",
-        cleanSpec: "lodash",
-      });
+      expect(detectRegistry("npm:lodash")).toEqual({ registry: "npm", cleanSpec: "lodash" });
     });
 
     it("detects npm: prefix case-insensitive", () => {
-      expect(detectRegistry("NPM:lodash")).toEqual({
-        registry: "npm",
-        cleanSpec: "lodash",
-      });
+      expect(detectRegistry("NPM:lodash")).toEqual({ registry: "npm", cleanSpec: "lodash" });
     });
 
     it("defaults to npm without prefix", () => {
-      expect(detectRegistry("lodash")).toEqual({
-        registry: "npm",
-        cleanSpec: "lodash",
-      });
+      expect(detectRegistry("lodash")).toEqual({ registry: "npm", cleanSpec: "lodash" });
     });
 
     it("defaults to npm for scoped packages", () => {
-      expect(detectRegistry("@babel/core")).toEqual({
-        registry: "npm",
-        cleanSpec: "@babel/core",
-      });
+      expect(detectRegistry("@babel/core")).toEqual({ registry: "npm", cleanSpec: "@babel/core" });
     });
   });
 
   describe("pypi registry", () => {
     it("detects pypi: prefix", () => {
-      expect(detectRegistry("pypi:requests")).toEqual({
-        registry: "pypi",
-        cleanSpec: "requests",
-      });
+      expect(detectRegistry("pypi:requests")).toEqual({ registry: "pypi", cleanSpec: "requests" });
     });
 
     it("detects pip: prefix", () => {
-      expect(detectRegistry("pip:requests")).toEqual({
-        registry: "pypi",
-        cleanSpec: "requests",
-      });
+      expect(detectRegistry("pip:requests")).toEqual({ registry: "pypi", cleanSpec: "requests" });
     });
 
     it("detects python: prefix", () => {
@@ -55,33 +37,21 @@ describe("detectRegistry", () => {
     });
 
     it("handles case-insensitive prefixes", () => {
-      expect(detectRegistry("PYPI:requests")).toEqual({
-        registry: "pypi",
-        cleanSpec: "requests",
-      });
+      expect(detectRegistry("PYPI:requests")).toEqual({ registry: "pypi", cleanSpec: "requests" });
     });
   });
 
   describe("crates registry", () => {
     it("detects crates: prefix", () => {
-      expect(detectRegistry("crates:serde")).toEqual({
-        registry: "crates",
-        cleanSpec: "serde",
-      });
+      expect(detectRegistry("crates:serde")).toEqual({ registry: "crates", cleanSpec: "serde" });
     });
 
     it("detects cargo: prefix", () => {
-      expect(detectRegistry("cargo:serde")).toEqual({
-        registry: "crates",
-        cleanSpec: "serde",
-      });
+      expect(detectRegistry("cargo:serde")).toEqual({ registry: "crates", cleanSpec: "serde" });
     });
 
     it("detects rust: prefix", () => {
-      expect(detectRegistry("rust:serde")).toEqual({
-        registry: "crates",
-        cleanSpec: "serde",
-      });
+      expect(detectRegistry("rust:serde")).toEqual({ registry: "crates", cleanSpec: "serde" });
     });
   });
 
@@ -186,23 +156,18 @@ describe("detectInputType", () => {
     it("npm package (default)", () => {
       expect(detectInputType("lodash")).toBe("package");
     });
-
     it("npm package with prefix", () => {
       expect(detectInputType("npm:react")).toBe("package");
     });
-
     it("scoped npm package", () => {
       expect(detectInputType("@babel/core")).toBe("package");
     });
-
     it("pypi package", () => {
       expect(detectInputType("pypi:requests")).toBe("package");
     });
-
     it("crates package", () => {
       expect(detectInputType("crates:serde")).toBe("package");
     });
-
     it("package with version", () => {
       expect(detectInputType("lodash@4.17.21")).toBe("package");
     });
@@ -212,23 +177,18 @@ describe("detectInputType", () => {
     it("github: prefix", () => {
       expect(detectInputType("github:vercel/ai")).toBe("repo");
     });
-
     it("GitHub URL", () => {
       expect(detectInputType("https://github.com/vercel/ai")).toBe("repo");
     });
-
     it("owner/repo format", () => {
       expect(detectInputType("vercel/ai")).toBe("repo");
     });
-
     it("host/owner/repo format", () => {
       expect(detectInputType("github.com/vercel/ai")).toBe("repo");
     });
-
     it("gitlab: prefix", () => {
       expect(detectInputType("gitlab:owner/repo")).toBe("repo");
     });
-
     it("GitLab URL", () => {
       expect(detectInputType("https://gitlab.com/owner/repo")).toBe("repo");
     });

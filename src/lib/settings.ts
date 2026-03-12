@@ -1,37 +1,28 @@
 import { readFile, writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import { z } from "zod";
 
-const OPENSRC_DIR = "opensrc";
+const OPNSRC_DIR = "opnsrc";
 const SETTINGS_FILE = "settings.json";
 
-export interface OpensrcSettings {
-  allowFileModifications?: boolean;
-}
+const OpnsrcSettingsSchema = z.object({
+  allowFileModifications: z.boolean().optional(),
+});
+export type OpnsrcSettings = z.infer<typeof OpnsrcSettingsSchema>;
 
-/**
- * Get the path to the settings file
- */
 function getSettingsPath(cwd: string): string {
-  return join(cwd, OPENSRC_DIR, SETTINGS_FILE);
+  return join(cwd, OPNSRC_DIR, SETTINGS_FILE);
 }
 
-/**
- * Ensure the opensrc directory exists
- */
-async function ensureOpensrcDir(cwd: string): Promise<void> {
-  const opensrcDir = join(cwd, OPENSRC_DIR);
-  if (!existsSync(opensrcDir)) {
-    await mkdir(opensrcDir, { recursive: true });
+async function ensureOpnsrcDir(cwd: string): Promise<void> {
+  const dir = join(cwd, OPNSRC_DIR);
+  if (!existsSync(dir)) {
+    await mkdir(dir, { recursive: true });
   }
 }
 
-/**
- * Read settings from opensrc/settings.json
- */
-export async function readSettings(
-  cwd: string = process.cwd(),
-): Promise<OpensrcSettings> {
+export async function readSettings(cwd: string = process.cwd()): Promise<OpnsrcSettings> {
   const settingsPath = getSettingsPath(cwd);
 
   if (!existsSync(settingsPath)) {
@@ -40,32 +31,23 @@ export async function readSettings(
 
   try {
     const content = await readFile(settingsPath, "utf-8");
-    return JSON.parse(content) as OpensrcSettings;
+    const parsed = OpnsrcSettingsSchema.safeParse(JSON.parse(content));
+    if (!parsed.success) return {};
+    return parsed.data;
   } catch {
     return {};
   }
 }
 
-/**
- * Write settings to opensrc/settings.json
- */
 export async function writeSettings(
-  settings: OpensrcSettings,
+  settings: OpnsrcSettings,
   cwd: string = process.cwd(),
 ): Promise<void> {
-  await ensureOpensrcDir(cwd);
+  await ensureOpnsrcDir(cwd);
   const settingsPath = getSettingsPath(cwd);
-  await writeFile(
-    settingsPath,
-    JSON.stringify(settings, null, 2) + "\n",
-    "utf-8",
-  );
+  await writeFile(settingsPath, JSON.stringify(settings, null, 2) + "\n", "utf-8");
 }
 
-/**
- * Check if file modifications are allowed
- * Returns: true if allowed, false if denied, undefined if not set
- */
 export async function getFileModificationPermission(
   cwd: string = process.cwd(),
 ): Promise<boolean | undefined> {
@@ -73,9 +55,6 @@ export async function getFileModificationPermission(
   return settings.allowFileModifications;
 }
 
-/**
- * Save the file modification permission setting
- */
 export async function setFileModificationPermission(
   allowed: boolean,
   cwd: string = process.cwd(),

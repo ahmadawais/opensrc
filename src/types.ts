@@ -1,89 +1,60 @@
-/**
- * Supported package registries
- */
-export type Registry = "npm" | "pypi" | "crates";
+import { z } from "zod";
 
-export interface PackageInfo {
-  name: string;
-  version: string;
-  repository?: {
-    type: string;
-    url: string;
-    directory?: string;
-  };
-}
+export const RegistrySchema = z.enum(["npm", "pypi", "crates"]);
+export type Registry = z.infer<typeof RegistrySchema>;
 
-export interface RegistryResponse {
-  name: string;
-  "dist-tags": {
-    latest: string;
-    [key: string]: string;
-  };
-  versions: {
-    [version: string]: PackageInfo;
-  };
-  repository?: {
-    type: string;
-    url: string;
-    directory?: string;
-  };
-}
+export type PackageName = string & { readonly __brand: "PackageName" };
+export type PackageVersion = string & { readonly __brand: "PackageVersion" };
 
-export interface ResolvedPackage {
-  registry: Registry;
-  name: string;
-  version: string;
-  repoUrl: string;
-  repoDirectory?: string;
-  gitTag: string;
-}
+export const PackageSpecSchema = z.object({
+  registry: RegistrySchema,
+  name: z.string(),
+  version: z.string().optional(),
+});
+export type PackageSpec = z.infer<typeof PackageSpecSchema>;
 
-export interface FetchResult {
-  package: string;
-  version: string;
-  path: string;
-  success: boolean;
-  error?: string;
-  registry?: Registry;
-}
+export const ResolvedPackageSchema = z.object({
+  registry: RegistrySchema,
+  name: z.string(),
+  version: z.string(),
+  repoUrl: z.string().url(),
+  repoDirectory: z.string().optional(),
+  gitTag: z.string(),
+});
+export type ResolvedPackage = z.infer<typeof ResolvedPackageSchema>;
 
-export interface InstalledPackage {
-  name: string;
-  version: string;
-}
+export const FetchResultSchema = z.object({
+  package: z.string(),
+  version: z.string(),
+  path: z.string(),
+  success: z.boolean(),
+  error: z.string().optional(),
+  registry: RegistrySchema.optional(),
+});
+export type FetchResult = z.infer<typeof FetchResultSchema>;
 
-/**
- * Parsed repository specification
- */
-export interface RepoSpec {
-  host: string; // e.g., "github.com", "gitlab.com"
-  owner: string;
-  repo: string;
-  ref?: string; // branch, tag, or commit
-}
+export const InstalledPackageSchema = z.object({
+  name: z.string(),
+  version: z.string(),
+});
+export type InstalledPackage = z.infer<typeof InstalledPackageSchema>;
 
-/**
- * Type of input: package (with ecosystem) or git repo
- */
+export const RepoSpecSchema = z.object({
+  host: z.string(),
+  owner: z.string(),
+  repo: z.string(),
+  ref: z.string().optional(),
+});
+export type RepoSpec = z.infer<typeof RepoSpecSchema>;
+
+export const ResolvedRepoSchema = z.object({
+  host: z.string(),
+  owner: z.string(),
+  repo: z.string(),
+  ref: z.string(),
+  repoUrl: z.string().url(),
+  displayName: z.string(),
+});
+export type ResolvedRepo = z.infer<typeof ResolvedRepoSchema>;
+
 export type InputType = "package" | "repo";
-
-/**
- * Parsed package specification with registry
- */
-export interface PackageSpec {
-  registry: Registry;
-  name: string;
-  version?: string;
-}
-
-/**
- * Resolved repository information (for git repos)
- */
-export interface ResolvedRepo {
-  host: string; // e.g., "github.com", "gitlab.com"
-  owner: string;
-  repo: string;
-  ref: string; // branch, tag, or commit (resolved)
-  repoUrl: string;
-  displayName: string; // e.g., "github.com/owner/repo"
-}

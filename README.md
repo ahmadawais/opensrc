@@ -1,135 +1,109 @@
-# opensrc
+# opnsrc
 
-Fetch source code for npm packages to give coding agents deeper context than types alone.
-
-## Why?
-
-When working with AI coding agents, types and documentation often aren't enough. Sometimes the agent needs to understand the *implementation* - how something works internally, not just its interface.
-
-`opensrc` automates the process of fetching package source code so your agent can reference it when needed.
-
-## Installation
+> Fetch source code for npm/PyPI/crates packages and GitHub repos to give AI coding agents deeper context.
 
 ```bash
-npm install -g opensrc
+npx opnsrc zod
+npx opnsrc pypi:requests
+npx opnsrc crates:serde
+npx opnsrc vercel/ai
 ```
 
-Or use with npx:
+## Why
+
+AI coding agents work better when they can read the actual source code of your dependencies — not just types and docs. `opnsrc` clones the source at the exact version you have installed and saves it in `opnsrc/` in your project.
+
+## Install
 
 ```bash
-npx opensrc <package>
+npm install -g opnsrc
+# or use without installing:
+npx opnsrc <package>
 ```
 
 ## Usage
 
-### npm Packages
+### Fetch source code
 
 ```bash
-# Fetch source for a package (auto-detects version from lockfile)
-opensrc zod
+# npm packages (auto-detects installed version)
+opnsrc zod
+opnsrc react@18.2.0
+opnsrc @types/node
 
-# Fetch specific version
-opensrc zod@3.22.0
+# PyPI packages
+opnsrc pypi:requests
+opnsrc pypi:django==4.2.0
 
-# Fetch multiple packages
-opensrc react react-dom next
+# crates.io packages
+opnsrc crates:serde
+opnsrc crates:tokio@1.35.0
+
+# GitHub / GitLab repos
+opnsrc vercel/ai
+opnsrc github:facebook/react
+opnsrc https://github.com/colinhacks/zod
+opnsrc gitlab:owner/repo@main
 ```
 
-Re-running `opensrc <package>` automatically updates to match your installed version—no flags needed.
-
-### GitHub Repositories
-
-You can also fetch source code directly from any public GitHub repository:
+### List fetched sources
 
 ```bash
-# Using github: prefix
-opensrc github:owner/repo
-
-# Using owner/repo shorthand
-opensrc facebook/react
-
-# Using full GitHub URL
-opensrc https://github.com/colinhacks/zod
-
-# Fetch a specific branch or tag
-opensrc owner/repo@v1.0.0
-opensrc owner/repo#main
-
-# Mix packages and repos
-opensrc zod facebook/react
+opnsrc list
+opnsrc list --json
 ```
 
-GitHub repos are stored as `opensrc/owner--repo/`.
-
-### Managing Sources
+### Remove sources
 
 ```bash
-# List fetched sources
-opensrc list
-
-# Remove a source (package or repo)
-opensrc remove zod
-opensrc remove owner--repo
+opnsrc remove zod
+opnsrc remove pypi:requests
+opnsrc remove vercel/ai
 ```
 
-### File Modifications
+### Clean all sources
 
-On first run, opensrc will ask for permission to modify these files:
+```bash
+opnsrc clean              # removes everything
+opnsrc clean --packages   # removes all packages only
+opnsrc clean --repos      # removes all repos only
+opnsrc clean --npm        # removes npm packages only
+opnsrc clean --pypi       # removes PyPI packages only
+opnsrc clean --crates     # removes crates.io packages only
+```
 
-- `.gitignore` — adds `opensrc/` to ignore list
-- `tsconfig.json` — excludes `opensrc/` from compilation
+## File Modifications
+
+On first run, `opnsrc` asks whether it can update:
+
+- `.gitignore` — adds `opnsrc/` to keep cloned sources out of git
+- `tsconfig.json` — adds `opnsrc` to `exclude` array
 - `AGENTS.md` — adds a section pointing agents to the source code
 
-Your choice is saved to `opensrc/settings.json` so you won't be prompted again.
+Your answer is saved to `opnsrc/settings.json`. Pass `--modify` or `--modify=false` to override.
 
-To skip the prompt, use the `--modify` flag:
+## Options
 
-```bash
-# Allow file modifications
-opensrc zod --modify
+| Flag | Description |
+|------|-------------|
+| `--cwd <path>` | Working directory (default: current directory) |
+| `--modify` | Allow file modifications |
+| `--modify=false` | Deny file modifications |
+| `-v, --version` | Print version number |
+| `-h, --help` | Display help |
 
-# Deny file modifications
-opensrc zod --modify=false
-```
-
-## How it works
-
-1. Queries the npm registry to find the package's repository URL
-2. Detects the installed version from your lockfile (`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`)
-3. Clones the repository at the matching git tag
-4. Stores the source in `opensrc/<package-name>/`
-5. If permitted: adds `opensrc/` to `.gitignore`, excludes from `tsconfig.json`, updates `AGENTS.md`
-
-## Output
-
-After running `opensrc zod`:
+## Storage Layout
 
 ```
-opensrc/
-├── settings.json       # Your modification preferences
-├── sources.json        # Index of fetched packages
-└── zod/
-    ├── src/
-    ├── package.json
-    └── ...
-```
-
-The `sources.json` file lists all fetched packages with their versions, so agents know what's available:
-
-```json
-{
-  "packages": [
-    { "name": "zod", "version": "3.22.0", "path": "opensrc/zod" }
-  ]
-}
-```
-
-The `settings.json` file stores your preferences:
-
-```json
-{
-  "allowFileModifications": true
-}
+opnsrc/
+  sources.json          # index of all fetched sources
+  settings.json         # user preferences
+  repos/
+    github.com/
+      owner/
+        repo/           # cloned source (no .git)
+    gitlab.com/
+      ...
 ```
 
 ## License

@@ -17,24 +17,13 @@ beforeEach(() => {
 describe("CLI --cwd routing", () => {
   it("passes --cwd to list subcommand", async () => {
     const program = createProgram();
-    await program.parseAsync(["node", "opensrc", "list", "--cwd", "/tmp/foo"]);
-
-    expect(listCommand).toHaveBeenCalledWith(
-      expect.objectContaining({ cwd: "/tmp/foo" }),
-    );
+    await program.parseAsync(["node", "opnsrc", "list", "--cwd", "/tmp/foo"]);
+    expect(listCommand).toHaveBeenCalledWith(expect.objectContaining({ cwd: "/tmp/foo" }));
   });
 
   it("passes --cwd to remove subcommand", async () => {
     const program = createProgram();
-    await program.parseAsync([
-      "node",
-      "opensrc",
-      "remove",
-      "zod",
-      "--cwd",
-      "/tmp/bar",
-    ]);
-
+    await program.parseAsync(["node", "opnsrc", "remove", "zod", "--cwd", "/tmp/bar"]);
     expect(removeCommand).toHaveBeenCalledWith(
       ["zod"],
       expect.objectContaining({ cwd: "/tmp/bar" }),
@@ -43,16 +32,7 @@ describe("CLI --cwd routing", () => {
 
   it("passes --cwd to clean subcommand", async () => {
     const program = createProgram();
-    await program.parseAsync([
-      "node",
-      "opensrc",
-      "clean",
-      "--cwd",
-      "/tmp/baz",
-    ]);
-
-    expect(cleanCommand).toHaveBeenCalledWith(
-      expect.objectContaining({ cwd: "/tmp/baz" }),
-    );
+    await program.parseAsync(["node", "opnsrc", "clean", "--cwd", "/tmp/baz"]);
+    expect(cleanCommand).toHaveBeenCalledWith(expect.objectContaining({ cwd: "/tmp/baz" }));
   });
 });

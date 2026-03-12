@@ -3,23 +3,23 @@ import { mkdir, rm, readFile, writeFile } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
 import {
-  hasOpensrcSection,
+  hasOpnsrcSection,
   ensureAgentsMd,
   updateAgentsMd,
   updatePackageIndex,
-  removeOpensrcSection,
+  removeOpnsrcSection,
 } from "./agents.js";
 
 const TEST_DIR = join(process.cwd(), ".test-agents");
 const AGENTS_FILE = join(TEST_DIR, "AGENTS.md");
-const OPENSRC_DIR = join(TEST_DIR, "opensrc");
-const SOURCES_FILE = join(OPENSRC_DIR, "sources.json");
+const OPNSRC_DIR = join(TEST_DIR, "opnsrc");
+const SOURCES_FILE = join(OPNSRC_DIR, "sources.json");
 
-const SECTION_MARKER = "<!-- opensrc:start -->";
-const SECTION_END_MARKER = "<!-- opensrc:end -->";
+const SECTION_MARKER = "<!-- opnsrc:start -->";
+const SECTION_END_MARKER = "<!-- opnsrc:end -->";
 
 beforeEach(async () => {
-  await mkdir(OPENSRC_DIR, { recursive: true });
+  await mkdir(OPNSRC_DIR, { recursive: true });
 });
 
 afterEach(async () => {
@@ -28,22 +28,22 @@ afterEach(async () => {
   }
 });
 
-describe("hasOpensrcSection", () => {
+describe("hasOpnsrcSection", () => {
   it("returns false if AGENTS.md does not exist", async () => {
-    expect(await hasOpensrcSection(TEST_DIR)).toBe(false);
+    expect(await hasOpnsrcSection(TEST_DIR)).toBe(false);
   });
 
   it("returns false if AGENTS.md exists but has no section", async () => {
     await writeFile(AGENTS_FILE, "# AGENTS.md\n\nSome content");
-    expect(await hasOpensrcSection(TEST_DIR)).toBe(false);
+    expect(await hasOpnsrcSection(TEST_DIR)).toBe(false);
   });
 
-  it("returns true if AGENTS.md has the opensrc section", async () => {
+  it("returns true if AGENTS.md has the opnsrc section", async () => {
     await writeFile(
       AGENTS_FILE,
       `# AGENTS.md\n\n${SECTION_MARKER}\nContent\n${SECTION_END_MARKER}`,
     );
-    expect(await hasOpensrcSection(TEST_DIR)).toBe(true);
+    expect(await hasOpnsrcSection(TEST_DIR)).toBe(true);
   });
 });
 
@@ -69,20 +69,16 @@ describe("ensureAgentsMd", () => {
     const content = await readFile(AGENTS_FILE, "utf-8");
     expect(content).toContain("Existing content here.");
     expect(content).toContain(SECTION_MARKER);
-    expect(content).toContain("npx opensrc");
+    expect(content).toContain("npx opnsrc");
   });
 
   it("returns false if section already exists and is up to date", async () => {
-    // First call creates the section
     await ensureAgentsMd(TEST_DIR);
-
-    // Second call should return false (no changes needed)
     const result = await ensureAgentsMd(TEST_DIR);
     expect(result).toBe(false);
   });
 
   it("updates section if content has changed", async () => {
-    // Create file with old section content
     const oldSection = `${SECTION_MARKER}\n\nOld content\n\n${SECTION_END_MARKER}`;
     await writeFile(AGENTS_FILE, `# AGENTS.md\n\n${oldSection}`);
 
@@ -197,15 +193,9 @@ describe("updatePackageIndex", () => {
   });
 
   it("removes sources.json if no sources", async () => {
-    // First create a sources.json
     await writeFile(SOURCES_FILE, JSON.stringify({ packages: [], repos: [] }));
 
-    const sources = {
-      packages: [],
-      repos: [],
-    };
-
-    await updatePackageIndex(sources, TEST_DIR);
+    await updatePackageIndex({ packages: [], repos: [] }, TEST_DIR);
 
     expect(existsSync(SOURCES_FILE)).toBe(false);
   });
@@ -254,17 +244,11 @@ describe("updateAgentsMd", () => {
   });
 
   it("does not create AGENTS.md if no sources", async () => {
-    const sources = {
-      packages: [],
-      repos: [],
-    };
-
-    await updateAgentsMd(sources, TEST_DIR);
-
+    await updateAgentsMd({ packages: [], repos: [] }, TEST_DIR);
     expect(existsSync(AGENTS_FILE)).toBe(false);
   });
 
-  it("removes opensrc section from AGENTS.md when sources become empty", async () => {
+  it("removes opnsrc section from AGENTS.md when sources become empty", async () => {
     const pkg = {
       name: "zod",
       version: "3.22.0",
@@ -278,10 +262,7 @@ describe("updateAgentsMd", () => {
     const contentBefore = await readFile(AGENTS_FILE, "utf-8");
     expect(contentBefore).toContain(SECTION_MARKER);
 
-    const result = await updateAgentsMd(
-      { packages: [], repos: [] },
-      TEST_DIR,
-    );
+    const result = await updateAgentsMd({ packages: [], repos: [] }, TEST_DIR);
     expect(result).toBe(true);
 
     const contentAfter = await readFile(AGENTS_FILE, "utf-8");
@@ -290,26 +271,25 @@ describe("updateAgentsMd", () => {
   });
 });
 
-describe("removeOpensrcSection", () => {
+describe("removeOpnsrcSection", () => {
   it("returns false if AGENTS.md does not exist", async () => {
-    const result = await removeOpensrcSection(TEST_DIR);
+    const result = await removeOpnsrcSection(TEST_DIR);
     expect(result).toBe(false);
   });
 
   it("returns false if no section exists", async () => {
     await writeFile(AGENTS_FILE, "# AGENTS.md\n\nNo section here.");
-
-    const result = await removeOpensrcSection(TEST_DIR);
+    const result = await removeOpnsrcSection(TEST_DIR);
     expect(result).toBe(false);
   });
 
-  it("removes the opensrc section", async () => {
+  it("removes the opnsrc section", async () => {
     await writeFile(
       AGENTS_FILE,
       `# AGENTS.md\n\nBefore\n\n${SECTION_MARKER}\n\nSection content\n\n${SECTION_END_MARKER}\n\nAfter`,
     );
 
-    const result = await removeOpensrcSection(TEST_DIR);
+    const result = await removeOpnsrcSection(TEST_DIR);
     expect(result).toBe(true);
 
     const content = await readFile(AGENTS_FILE, "utf-8");
@@ -325,10 +305,9 @@ describe("removeOpensrcSection", () => {
       `# AGENTS.md\n\n\n\n${SECTION_MARKER}\n\nContent\n\n${SECTION_END_MARKER}\n\n\n\n`,
     );
 
-    await removeOpensrcSection(TEST_DIR);
+    await removeOpnsrcSection(TEST_DIR);
 
     const content = await readFile(AGENTS_FILE, "utf-8");
-    // Should not have more than 2 consecutive newlines
     expect(content).not.toMatch(/\n{3,}/);
   });
 });
